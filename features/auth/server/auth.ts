@@ -5,6 +5,7 @@ import { createHash, randomBytes } from "node:crypto"
 import { and, eq, gt } from "drizzle-orm"
 import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
+import { cache } from "react"
 
 import { db } from "@/lib/db"
 import { profiles, sessions, users } from "@/lib/db/schema"
@@ -86,7 +87,7 @@ export async function createSession(userId: string) {
   await setSessionCookie(sessionToken, expiresAt)
 }
 
-export async function getCurrentUser() {
+export const getCurrentUser = cache(async function getCurrentUser() {
   const cookieStore = await cookies()
   const sessionToken = cookieStore.get(SESSION_COOKIE_NAME)?.value
 
@@ -115,7 +116,7 @@ export async function getCurrentUser() {
   }
 
   return result
-}
+})
 
 export async function requireCurrentUser() {
   const user = await getCurrentUser()
