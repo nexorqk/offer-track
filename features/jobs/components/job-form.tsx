@@ -1,6 +1,8 @@
 "use client"
 
-import { useActionState } from "react"
+import { startTransition, useActionState } from "react"
+import * as React from "react"
+import { useForm, type FieldErrors, type UseFormRegisterReturn } from "react-hook-form"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -48,9 +50,54 @@ export function JobForm({
     action,
     initialJobFormState,
   )
+  const {
+    formState,
+    getValues,
+    handleSubmit,
+    register,
+    reset,
+    setError,
+  } = useForm<JobFormValues>({
+    defaultValues: initialValues,
+  })
+
+  React.useEffect(() => {
+    reset(initialValues)
+  }, [initialValues, reset])
+
+  React.useEffect(() => {
+    if (!state.fieldErrors) {
+      return
+    }
+
+    for (const [fieldName, messages] of Object.entries(state.fieldErrors)) {
+      const message = messages?.[0]
+
+      if (!message) {
+        continue
+      }
+
+      setError(fieldName as JobFormFieldName, {
+        message,
+        type: "server",
+      })
+    }
+  }, [setError, state.fieldErrors])
+
+  const submitForm = handleSubmit((_, event) => {
+    const form = event?.currentTarget
+
+    if (!(form instanceof HTMLFormElement)) {
+      return
+    }
+
+    startTransition(() => {
+      formAction(new FormData(form))
+    })
+  })
 
   return (
-    <form action={formAction} className="grid gap-5">
+    <form onSubmit={submitForm} className="grid gap-5">
       {jobId ? <input type="hidden" name="jobId" value={jobId} /> : null}
 
       <div className="flex flex-col gap-2">
@@ -64,11 +111,13 @@ export function JobForm({
       <section className="grid gap-4 rounded-[1.75rem] border bg-background/80 p-4">
         <div className="grid gap-4 md:grid-cols-[1.3fr_0.9fr]">
           <Field
-            defaultValue={initialValues.title}
-            error={getFieldError(state, "title")}
+            error={getFieldError(formState.errors, state, "title")}
             label="Role title"
             name="title"
             placeholder="Senior Frontend Engineer"
+            registration={register("title", {
+              required: "Job title is required",
+            })}
           />
           <div className="grid gap-2">
             <label htmlFor="companyName" className="text-sm font-medium">
@@ -76,45 +125,47 @@ export function JobForm({
             </label>
             <Input
               id="companyName"
-              name="companyName"
               list="job-company-options"
-              defaultValue={initialValues.companyName}
               placeholder="Atlas Labs"
-              aria-invalid={getFieldError(state, "companyName") ? "true" : "false"}
+              aria-invalid={
+                getFieldError(formState.errors, state, "companyName") ? "true" : "false"
+              }
+              {...register("companyName", {
+                required: "Company name is required",
+              })}
             />
             <datalist id="job-company-options">
               {companyOptions.map((companyName) => (
                 <option key={companyName} value={companyName} />
               ))}
             </datalist>
-            <FieldError error={getFieldError(state, "companyName")} />
+            <FieldError error={getFieldError(formState.errors, state, "companyName")} />
           </div>
         </div>
 
         <div className="grid gap-4 md:grid-cols-3">
           <SelectField
-            defaultValue={initialValues.status}
-            error={getFieldError(state, "status")}
+            error={getFieldError(formState.errors, state, "status")}
             label="Status"
             name="status"
             options={jobStatusOptions.map((value) => ({
               label: formatStatusLabel(value),
               value,
             }))}
+            registration={register("status")}
           />
           <SelectField
-            defaultValue={initialValues.priority}
-            error={getFieldError(state, "priority")}
+            error={getFieldError(formState.errors, state, "priority")}
             label="Priority"
             name="priority"
             options={jobPriorityOptions.map((value) => ({
               label: value[0].toUpperCase() + value.slice(1),
               value,
             }))}
+            registration={register("priority")}
           />
           <SelectField
-            defaultValue={initialValues.workMode}
-            error={getFieldError(state, "workMode")}
+            error={getFieldError(formState.errors, state, "workMode")}
             label="Work mode"
             name="workMode"
             options={[
@@ -124,6 +175,7 @@ export function JobForm({
                 value,
               })),
             ]}
+            registration={register("workMode")}
           />
         </div>
       </section>
@@ -131,65 +183,85 @@ export function JobForm({
       <section className="grid gap-4 rounded-[1.75rem] border bg-background/80 p-4">
         <div className="grid gap-4 md:grid-cols-2">
           <Field
-            defaultValue={initialValues.location}
-            error={getFieldError(state, "location")}
+            error={getFieldError(formState.errors, state, "location")}
             label="Location"
             name="location"
             placeholder="Remote, EU"
+            registration={register("location")}
           />
           <Field
-            defaultValue={initialValues.employmentType}
-            error={getFieldError(state, "employmentType")}
+            error={getFieldError(formState.errors, state, "employmentType")}
             label="Employment type"
             name="employmentType"
             placeholder="full-time"
+            registration={register("employmentType")}
           />
           <Field
-            defaultValue={initialValues.source}
-            error={getFieldError(state, "source")}
+            error={getFieldError(formState.errors, state, "source")}
             label="Source"
             name="source"
             placeholder="LinkedIn"
+            registration={register("source")}
           />
           <Field
-            defaultValue={initialValues.sourceUrl}
-            error={getFieldError(state, "sourceUrl")}
+            error={getFieldError(formState.errors, state, "sourceUrl")}
             label="Source URL"
             name="sourceUrl"
             placeholder="https://..."
+            registration={register("sourceUrl", {
+              validate: (value) =>
+                !value || URL.canParse(value) || "Enter a valid source URL",
+            })}
           />
           <Field
-            defaultValue={initialValues.appliedAt}
-            error={getFieldError(state, "appliedAt")}
+            error={getFieldError(formState.errors, state, "appliedAt")}
             label="Applied at"
             name="appliedAt"
             type="date"
+            registration={register("appliedAt")}
           />
           <Field
-            defaultValue={initialValues.currency}
-            error={getFieldError(state, "currency")}
+            error={getFieldError(formState.errors, state, "currency")}
             label="Currency"
             name="currency"
             placeholder="USD"
+            registration={register("currency")}
           />
         </div>
 
         <div className="grid gap-4 md:grid-cols-2">
           <Field
-            defaultValue={initialValues.salaryMin}
-            error={getFieldError(state, "salaryMin")}
+            error={getFieldError(formState.errors, state, "salaryMin")}
             label="Salary min"
             name="salaryMin"
             placeholder="4500"
             type="number"
+            registration={register("salaryMin", {
+              validate: (value) =>
+                !value || isWholeNumber(value) || "Enter a whole number",
+            })}
           />
           <Field
-            defaultValue={initialValues.salaryMax}
-            error={getFieldError(state, "salaryMax")}
+            error={getFieldError(formState.errors, state, "salaryMax")}
             label="Salary max"
             name="salaryMax"
             placeholder="5500"
             type="number"
+            registration={register("salaryMax", {
+              validate: (value) => {
+                if (value && !isWholeNumber(value)) {
+                  return "Enter a whole number"
+                }
+
+                const salaryMin = getValues("salaryMin")
+
+                if (salaryMin && value && Number(value) < Number(salaryMin)) {
+                  return "Maximum salary must be greater than or equal to minimum salary"
+                }
+
+                return true
+              },
+            })}
           />
         </div>
 
@@ -199,12 +271,11 @@ export function JobForm({
           </label>
           <textarea
             id="description"
-            name="description"
-            defaultValue={initialValues.description}
             className={textareaClassName}
             placeholder="Role scope, prep notes, and anything worth remembering."
+            {...register("description")}
           />
-          <FieldError error={getFieldError(state, "description")} />
+          <FieldError error={getFieldError(formState.errors, state, "description")} />
         </div>
       </section>
 
@@ -222,18 +293,18 @@ export function JobForm({
 }
 
 function Field({
-  defaultValue,
   error,
   label,
   name,
   placeholder,
+  registration,
   type = "text",
 }: {
-  defaultValue: string
   error?: string
   label: string
   name: string
   placeholder?: string
+  registration: UseFormRegisterReturn
   type?: React.ComponentProps<typeof Input>["type"]
 }) {
   const describedBy = error ? `${name}-error` : undefined
@@ -245,12 +316,11 @@ function Field({
       </label>
       <Input
         id={name}
-        name={name}
         type={type}
-        defaultValue={defaultValue}
         placeholder={placeholder}
         aria-invalid={error ? "true" : "false"}
         aria-describedby={describedBy}
+        {...registration}
       />
       <FieldError error={error} id={describedBy} />
     </div>
@@ -258,17 +328,17 @@ function Field({
 }
 
 function SelectField({
-  defaultValue,
   error,
   label,
   name,
   options,
+  registration,
 }: {
-  defaultValue: string
   error?: string
   label: string
   name: string
   options: Array<{ label: string; value: string }>
+  registration: UseFormRegisterReturn
 }) {
   const describedBy = error ? `${name}-error` : undefined
 
@@ -279,11 +349,10 @@ function SelectField({
       </label>
       <select
         id={name}
-        name={name}
-        defaultValue={defaultValue}
         className={selectClassName}
         aria-invalid={error ? "true" : "false"}
         aria-describedby={describedBy}
+        {...registration}
       >
         {options.map((option) => (
           <option key={option.value || "blank"} value={option.value}>
@@ -310,8 +379,22 @@ function FieldError({
   ) : null
 }
 
-function getFieldError(state: JobFormState, fieldName: JobFormFieldName) {
+function getFieldError(
+  clientErrors: FieldErrors<JobFormValues>,
+  state: JobFormState,
+  fieldName: JobFormFieldName,
+) {
+  const clientError = clientErrors[fieldName]?.message
+
+  if (typeof clientError === "string" && clientError.length > 0) {
+    return clientError
+  }
+
   return state.fieldErrors?.[fieldName]?.[0]
+}
+
+function isWholeNumber(value: string) {
+  return /^\d+$/.test(value)
 }
 
 function formatStatusLabel(value: string) {

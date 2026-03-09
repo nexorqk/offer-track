@@ -2,6 +2,7 @@ import type { Metadata } from "next"
 import { Geist, Geist_Mono } from "next/font/google"
 
 import "./globals.css"
+import { QueryProvider } from "@/components/providers/query-provider"
 import { ThemeProvider } from "@/components/providers/theme-provider"
 import { cn } from "@/lib/utils"
 
@@ -35,9 +36,9 @@ export default function RootLayout({
       className={cn("antialiased", fontSans.variable, fontMono.variable)}
     >
       <body className="min-h-svh bg-gradient-to-b from-background via-background to-muted/30 text-foreground">
-        <ThemeProvider>
-          {children}
-        </ThemeProvider>
+        <QueryProvider>
+          <ThemeProvider>{children}</ThemeProvider>
+        </QueryProvider>
       </body>
     </html>
   )
