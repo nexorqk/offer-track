@@ -13,6 +13,8 @@
     "test:frontend": "vitest run -c vitest.frontend.config.ts",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
+    "db:seed": "node --env-file-if-exists=.env.local --env-file-if-exists=.env --experimental-strip-types scripts/db-seed.mjs",
+    "db:setup": "npm run db:migrate && npm run db:seed",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
     "format": "prettier --write \"**/*.{ts,tsx}\"",
