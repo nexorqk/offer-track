@@ -115,6 +115,14 @@ export function getDashboardNavigationItem(pathname: string) {
 }
 
 function getQuickActions(pathname: string) {
+  if (pathname === "/jobs/new") {
+    return [
+      { href: "/jobs", label: "Back to jobs" },
+      { href: "/contacts", label: "Recent contacts" },
+      { href: "/tasks", label: "Upcoming follow-ups" },
+    ]
+  }
+
   if (pathname.startsWith("/jobs/")) {
     return [
       { href: "/jobs", label: "Back to jobs" },
@@ -177,6 +185,14 @@ export function getDashboardBreadcrumbs(pathname: string): DashboardBreadcrumb[]
     return [{ label: "Dashboard" }]
   }
 
+  if (pathname === "/jobs/new") {
+    return [
+      { href: "/dashboard", label: "Dashboard" },
+      { href: "/jobs", label: "Jobs" },
+      { label: "New job" },
+    ]
+  }
+
   if (pathname.startsWith("/jobs/")) {
     const jobId = pathname.split("/")[2]
 
@@ -197,6 +213,21 @@ export function getDashboardBreadcrumbs(pathname: string): DashboardBreadcrumb[]
 
 export function getDashboardRouteContext(pathname: string) {
   const currentItem = getDashboardNavigationItem(pathname)
+
+  if (pathname === "/jobs/new") {
+    return {
+      breadcrumbs: getDashboardBreadcrumbs(pathname),
+      currentItem: {
+        ...currentItem,
+        description:
+          "Capture a new opportunity before moving it through the pipeline.",
+        group: "Track" as const,
+        label: "New job",
+        title: "Create job",
+      },
+      quickActions: getQuickActions(pathname),
+    }
+  }
 
   if (pathname.startsWith("/jobs/")) {
     const jobId = pathname.split("/")[2]

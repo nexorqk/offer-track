@@ -12,7 +12,6 @@ import {
 import { buttonVariants } from "@/components/ui/button-variants"
 import { Input } from "@/components/ui/input"
 import { requireCurrentUser } from "@/features/auth/server/auth"
-import { JobForm } from "@/features/jobs/components/job-form"
 import { JobsKanbanBoard } from "@/features/jobs/components/jobs-kanban-board"
 import {
   hasActiveJobListFilters,
@@ -24,12 +23,7 @@ import {
   parseJobListFilters,
   type JobListFilters,
 } from "@/features/jobs/schemas/job-list"
-import { createJobAction } from "@/features/jobs/server/actions"
-import {
-  listCompanyNameOptions,
-  listJobsForUser,
-} from "@/features/jobs/server/queries"
-import { emptyJobFormValues } from "@/features/jobs/types/job"
+import { listJobsForUser } from "@/features/jobs/server/queries"
 import { cn } from "@/lib/utils"
 
 type JobsPageProps = {
@@ -57,10 +51,9 @@ export default async function JobsPage({ searchParams }: JobsPageProps) {
   const jobsPromise = listJobsForUser(user.id, filters)
   const totalJobsPromise = hasActiveFilters ? listJobsForUser(user.id) : jobsPromise
 
-  const [jobs, totalJobs, companyOptions] = await Promise.all([
+  const [jobs, totalJobs] = await Promise.all([
     jobsPromise,
     totalJobsPromise,
-    listCompanyNameOptions(user.id),
   ])
 
   const activeJobs = totalJobs.filter((job) => job.status !== "offer" && job.status !== "rejected")
@@ -72,7 +65,7 @@ export default async function JobsPage({ searchParams }: JobsPageProps) {
 
   return (
     <div className="flex flex-col gap-5 pb-8">
-      <section className="grid gap-4 lg:grid-cols-[minmax(0,1.2fr)_minmax(20rem,0.8fr)]">
+      <section>
         <article className="overflow-hidden rounded-[2.25rem] border bg-[radial-gradient(circle_at_top_left,color-mix(in_oklch,var(--color-primary)_10%,transparent),transparent_40%),linear-gradient(180deg,color-mix(in_oklch,var(--color-background)_92%,transparent),color-mix(in_oklch,var(--color-muted)_20%,transparent))] p-5 shadow-sm">
           <div className="flex flex-col gap-6">
             <div className="flex flex-col gap-2">
@@ -85,18 +78,14 @@ export default async function JobsPage({ searchParams }: JobsPageProps) {
                     Pipeline built for action, not just storage.
                   </h1>
                   <p className="max-w-2xl text-sm leading-6 text-muted-foreground">
-                    Create roles, track stage movement, and keep every company tied
-                    back to one clean workflow.
+                    Search, filter, and move opportunities without a create form competing for attention.
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <a
-                    href="#job-create-form"
-                    className={buttonVariants({ size: "sm" })}
-                  >
+                  <Link href="/jobs/new" className={buttonVariants({ size: "sm" })}>
                     <Plus data-icon="inline-start" />
                     New job
-                  </a>
+                  </Link>
                 </div>
               </div>
             </div>
@@ -130,20 +119,6 @@ export default async function JobsPage({ searchParams }: JobsPageProps) {
               />
             </div>
           </div>
-        </article>
-
-        <article
-          id="job-create-form"
-          className="rounded-[2.25rem] border bg-background/92 p-5 shadow-sm"
-        >
-          <JobForm
-            action={createJobAction}
-            companyOptions={companyOptions}
-            description="Capture a new opportunity and automatically attach it to an existing or freshly created company."
-            initialValues={emptyJobFormValues}
-            submitLabel="Create job"
-            title="Add a role"
-          />
         </article>
       </section>
 
@@ -294,10 +269,18 @@ export default async function JobsPage({ searchParams }: JobsPageProps) {
         </div>
 
         {jobs.length === 0 ? (
-          <div className="px-5 py-10 text-sm text-muted-foreground">
-            {hasActiveFilters
-              ? "No jobs match the current filters. Adjust the search or reset the list."
-              : "No jobs yet. Add the first role from the panel above."}
+          <div className="flex flex-col items-start gap-4 px-5 py-10 text-sm text-muted-foreground">
+            <p>
+              {hasActiveFilters
+                ? "No jobs match the current filters. Adjust the search or reset the list."
+                : "No jobs yet. Create the first role to start building your pipeline."}
+            </p>
+            {!hasActiveFilters ? (
+              <Link href="/jobs/new" className={buttonVariants({ variant: "outline" })}>
+                <Plus data-icon="inline-start" />
+                Create first job
+              </Link>
+            ) : null}
           </div>
         ) : filters.view === "kanban" ? (
           <div className="p-4">
