@@ -8,6 +8,7 @@ import { redirect } from "next/navigation"
 import { cache } from "react"
 
 import { db } from "@/lib/db"
+import { withDatabaseRetry } from "@/lib/db/retry"
 import { profiles, sessions, users } from "@/lib/db/schema"
 import { SESSION_COOKIE_NAME } from "@/features/auth/session"
 const SESSION_DURATION_MS = 1000 * 60 * 60 * 24 * 30
@@ -38,15 +39,17 @@ async function setSessionCookie(sessionToken: string, expiresAt: Date) {
 }
 
 export async function findUserByEmail(email: string) {
-  const [user] = await db
-    .select({
-      id: users.id,
-      email: users.email,
-      passwordHash: users.passwordHash,
-    })
-    .from(users)
-    .where(eq(users.email, email))
-    .limit(1)
+  const [user] = await withDatabaseRetry(() =>
+    db
+      .select({
+        id: users.id,
+        email: users.email,
+        passwordHash: users.passwordHash,
+      })
+      .from(users)
+      .where(eq(users.email, email))
+      .limit(1)
+  )
 
   return user ?? null
 }
@@ -95,20 +98,22 @@ export const getCurrentUser = cache(async function getCurrentUser() {
     return null
   }
 
-  const [result] = await db
-    .select({
-      id: users.id,
-      email: users.email,
-    })
-    .from(sessions)
-    .innerJoin(users, eq(sessions.userId, users.id))
-    .where(
-      and(
-        eq(sessions.sessionTokenHash, hashSessionToken(sessionToken)),
-        gt(sessions.expiresAt, new Date())
+  const [result] = await withDatabaseRetry(() =>
+    db
+      .select({
+        id: users.id,
+        email: users.email,
+      })
+      .from(sessions)
+      .innerJoin(users, eq(sessions.userId, users.id))
+      .where(
+        and(
+          eq(sessions.sessionTokenHash, hashSessionToken(sessionToken)),
+          gt(sessions.expiresAt, new Date())
+        )
       )
-    )
-    .limit(1)
+      .limit(1)
+  )
 
   if (!result) {
     cookieStore.delete(SESSION_COOKIE_NAME)
