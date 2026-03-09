@@ -7,7 +7,7 @@ import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
 
 import { db } from "@/lib/db"
-import { sessions, users } from "@/lib/db/schema"
+import { profiles, sessions, users } from "@/lib/db/schema"
 import { SESSION_COOKIE_NAME } from "@/features/auth/session"
 const SESSION_DURATION_MS = 1000 * 60 * 60 * 24 * 30
 
@@ -51,18 +51,25 @@ export async function findUserByEmail(email: string) {
 }
 
 export async function createUser(email: string, passwordHash: string) {
-  const [user] = await db
-    .insert(users)
-    .values({
-      email,
-      passwordHash,
-    })
-    .returning({
-      id: users.id,
-      email: users.email,
+  return db.transaction(async (tx) => {
+    const [user] = await tx
+      .insert(users)
+      .values({
+        email,
+        passwordHash,
+      })
+      .returning({
+        id: users.id,
+        email: users.email,
+      })
+
+    await tx.insert(profiles).values({
+      id: user.id,
+      email: user.email,
     })
 
-  return user
+    return user
+  })
 }
 
 export async function createSession(userId: string) {

@@ -12,6 +12,6 @@ export default defineConfig({
   test: {
     environment: "node",
     globals: true,
-    include: ["features/**/*.test.ts"],
+    include: ["features/**/*.test.ts", "lib/**/*.test.ts"],
   },
 })
