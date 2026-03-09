@@ -1,9 +1,24 @@
 import Link from "next/link"
-import { BriefcaseBusiness, CalendarClock, ChevronRight, Plus } from "lucide-react"
+import {
+  ArrowUpDown,
+  BriefcaseBusiness,
+  ChevronRight,
+  Plus,
+  Search,
+  SlidersHorizontal,
+  X,
+} from "lucide-react"
 
 import { buttonVariants } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import { requireCurrentUser } from "@/features/auth/server/auth"
 import { JobForm } from "@/features/jobs/components/job-form"
+import {
+  hasActiveJobListFilters,
+  jobListSortOptions,
+  jobListStatusOptions,
+  parseJobListFilters,
+} from "@/features/jobs/schemas/job-list"
 import { createJobAction } from "@/features/jobs/server/actions"
 import {
   listCompanyNameOptions,
@@ -11,17 +26,34 @@ import {
 } from "@/features/jobs/server/queries"
 import { emptyJobFormValues } from "@/features/jobs/types/job"
 
-export default async function JobsPage() {
+type JobsPageProps = {
+  searchParams: Promise<Record<string, string | string[] | undefined>>
+}
+
+const selectClassName =
+  "flex h-11 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm shadow-xs transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+
+export default async function JobsPage({ searchParams }: JobsPageProps) {
   const user = await requireCurrentUser()
-  const [jobs, companyOptions] = await Promise.all([
-    listJobsForUser(user.id),
+
+  const filters = parseJobListFilters(await searchParams)
+  const hasActiveFilters = hasActiveJobListFilters(filters)
+
+  const jobsPromise = listJobsForUser(user.id, filters)
+  const totalJobsPromise = hasActiveFilters ? listJobsForUser(user.id) : jobsPromise
+
+  const [jobs, totalJobs, companyOptions] = await Promise.all([
+    jobsPromise,
+    totalJobsPromise,
     listCompanyNameOptions(user.id),
   ])
 
-  const activeJobs = jobs.filter((job) => job.status !== "offer" && job.status !== "rejected")
-  const lateStageJobs = jobs.filter((job) =>
+  const activeJobs = totalJobs.filter((job) => job.status !== "offer" && job.status !== "rejected")
+  const lateStageJobs = totalJobs.filter((job) =>
     ["technical", "final", "offer"].includes(job.status),
   )
+  const filteredAppliedJobs = jobs.filter((job) => job.status === "applied")
+  const filteredOfferJobs = jobs.filter((job) => job.status === "offer")
 
   return (
     <div className="flex flex-col gap-5 pb-8">
@@ -59,19 +91,27 @@ export default async function JobsPage() {
                 icon={BriefcaseBusiness}
                 label="Open pipeline"
                 value={String(activeJobs.length)}
-                note={`${lateStageJobs.length} in technical or later`}
+                note={`${lateStageJobs.length} in technical or later across the full pipeline`}
               />
               <StatCard
-                icon={CalendarClock}
-                label="Total tracked"
+                icon={Search}
+                label="Visible now"
                 value={String(jobs.length)}
-                note={`${jobs.filter((job) => job.status === "applied").length} waiting for first response`}
+                note={
+                  hasActiveFilters
+                    ? `Filtered from ${totalJobs.length} tracked opportunities`
+                    : `${filteredAppliedJobs.length} waiting for first response`
+                }
               />
               <StatCard
-                icon={ChevronRight}
+                icon={ArrowUpDown}
                 label="Offers closed"
-                value={String(jobs.filter((job) => job.status === "offer").length)}
-                note={`${jobs.filter((job) => job.status === "rejected").length} archived as rejected`}
+                value={String(filteredOfferJobs.length)}
+                note={
+                  hasActiveFilters
+                    ? `${filteredAppliedJobs.length} applied in the current view`
+                    : `${totalJobs.filter((job) => job.status === "rejected").length} archived as rejected`
+                }
               />
             </div>
           </div>
@@ -93,18 +133,84 @@ export default async function JobsPage() {
       </section>
 
       <section className="overflow-hidden rounded-[2.25rem] border bg-background/92 shadow-sm">
-        <div className="flex flex-col gap-2 border-b px-5 py-4">
-          <span className="text-[0.68rem] font-medium uppercase tracking-[0.28em] text-muted-foreground">
-            Job list
-          </span>
-          <h2 className="text-2xl font-semibold tracking-tight">
-            All tracked opportunities
-          </h2>
+        <div className="border-b px-5 py-4">
+          <div className="flex flex-col gap-2">
+            <span className="text-[0.68rem] font-medium uppercase tracking-[0.28em] text-muted-foreground">
+              Job list
+            </span>
+            <div className="flex flex-col gap-2 lg:flex-row lg:items-end lg:justify-between">
+              <div className="flex flex-col gap-1">
+                <h2 className="text-2xl font-semibold tracking-tight">
+                  All tracked opportunities
+                </h2>
+                <p className="text-sm text-muted-foreground">
+                  {hasActiveFilters
+                    ? `Showing ${jobs.length} of ${totalJobs.length} roles for the current filters.`
+                    : "Search by company, role, or location and sort the pipeline the way you work."}
+                </p>
+              </div>
+              <div className="inline-flex items-center gap-2 rounded-full border bg-background px-3 py-1.5 text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
+                <SlidersHorizontal className="size-3.5" />
+                {hasActiveFilters ? "Filtered view" : "Full pipeline"}
+              </div>
+            </div>
+          </div>
         </div>
+
+        <form method="get" className="grid gap-3 border-b p-4 lg:grid-cols-[minmax(0,1fr)_13rem_13rem_auto]">
+          <div className="grid gap-2">
+            <label htmlFor="jobs-search" className="text-sm font-medium">
+              Search
+            </label>
+            <Input
+              id="jobs-search"
+              name="q"
+              defaultValue={filters.q}
+              placeholder="Search by role, company, or location"
+            />
+          </div>
+
+          <FilterSelect
+            defaultValue={filters.status}
+            label="Status"
+            name="status"
+            options={jobListStatusOptions.map((value) => ({
+              label: value === "all" ? "All statuses" : formatStatusLabel(value),
+              value,
+            }))}
+          />
+
+          <FilterSelect
+            defaultValue={filters.sort}
+            label="Sort by"
+            name="sort"
+            options={jobListSortOptions.map((value) => ({
+              label: formatSortLabel(value),
+              value,
+            }))}
+          />
+
+          <div className="flex items-end gap-2">
+            <button className={buttonVariants({ size: "lg" })} type="submit">
+              Apply
+            </button>
+            {hasActiveFilters ? (
+              <Link
+                href="/jobs"
+                className={buttonVariants({ size: "lg", variant: "outline" })}
+              >
+                <X data-icon="inline-start" />
+                Reset
+              </Link>
+            ) : null}
+          </div>
+        </form>
 
         {jobs.length === 0 ? (
           <div className="px-5 py-10 text-sm text-muted-foreground">
-            No jobs yet. Add the first role from the panel above.
+            {hasActiveFilters
+              ? "No jobs match the current filters. Adjust the search or reset the list."
+              : "No jobs yet. Add the first role from the panel above."}
           </div>
         ) : (
           <div className="grid gap-3 p-4">
@@ -124,6 +230,7 @@ export default async function JobsPage() {
                     <span>{job.companyName}</span>
                     {job.location ? <span>{job.location}</span> : null}
                     {job.workMode ? <span>{capitalize(job.workMode)}</span> : null}
+                    {job.status === "wishlist" && !job.appliedAt ? <span>Not applied yet</span> : null}
                     {job.appliedAt ? <span>Applied {formatDate(job.appliedAt)}</span> : null}
                     {job.salaryMin || job.salaryMax ? (
                       <span>{formatSalary(job.salaryMin, job.salaryMax)}</span>
@@ -143,6 +250,33 @@ export default async function JobsPage() {
           </div>
         )}
       </section>
+    </div>
+  )
+}
+
+function FilterSelect({
+  defaultValue,
+  label,
+  name,
+  options,
+}: {
+  defaultValue: string
+  label: string
+  name: string
+  options: Array<{ label: string; value: string }>
+}) {
+  return (
+    <div className="grid gap-2">
+      <label htmlFor={name} className="text-sm font-medium">
+        {label}
+      </label>
+      <select id={name} name={name} defaultValue={defaultValue} className={selectClassName}>
+        {options.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
     </div>
   )
 }
@@ -188,7 +322,7 @@ function StatusBadge({ status }: { status: string }) {
 
   return (
     <span className={`rounded-full px-2 py-1 text-[0.68rem] font-medium uppercase tracking-[0.18em] ${tone}`}>
-      {status === "hr_screen" ? "HR screen" : status}
+      {formatStatusLabel(status)}
     </span>
   )
 }
@@ -244,4 +378,32 @@ function formatShortRelative(value: Date) {
 
 function capitalize(value: string) {
   return value[0].toUpperCase() + value.slice(1)
+}
+
+function formatStatusLabel(value: string) {
+  if (value === "hr_screen") {
+    return "HR screen"
+  }
+
+  return value[0].toUpperCase() + value.slice(1)
+}
+
+function formatSortLabel(value: (typeof jobListSortOptions)[number]) {
+  if (value === "updated_desc") {
+    return "Recently updated"
+  }
+
+  if (value === "updated_asc") {
+    return "Oldest updated"
+  }
+
+  if (value === "salary_desc") {
+    return "Highest salary"
+  }
+
+  if (value === "salary_asc") {
+    return "Lowest salary"
+  }
+
+  return "Company A-Z"
 }

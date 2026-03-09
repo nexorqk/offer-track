@@ -1,7 +1,8 @@
 import "server-only"
 
-import { and, desc, eq } from "drizzle-orm"
+import { and, asc, desc, eq, ilike, or } from "drizzle-orm"
 
+import { defaultJobListFilters, type JobListFilters } from "@/features/jobs/schemas/job-list"
 import { db } from "@/lib/db"
 import {
   companies,
@@ -10,7 +11,39 @@ import {
 } from "@/lib/db/schema"
 import { toJobFormValues } from "@/features/jobs/types/job"
 
-export async function listJobsForUser(userId: string) {
+export async function listJobsForUser(
+  userId: string,
+  filters: JobListFilters = defaultJobListFilters,
+) {
+  const conditions = [eq(jobs.userId, userId)]
+
+  if (filters.status !== "all") {
+    conditions.push(eq(jobs.status, filters.status))
+  }
+
+  if (filters.q) {
+    const pattern = `%${filters.q}%`
+
+    conditions.push(
+      or(
+        ilike(jobs.title, pattern),
+        ilike(companies.name, pattern),
+        ilike(jobs.location, pattern),
+      )!,
+    )
+  }
+
+  const orderBy =
+    filters.sort === "updated_asc"
+      ? [asc(jobs.updatedAt), asc(companies.name), asc(jobs.title)]
+      : filters.sort === "salary_desc"
+        ? [desc(jobs.salaryMax), desc(jobs.salaryMin), desc(jobs.updatedAt)]
+        : filters.sort === "salary_asc"
+          ? [asc(jobs.salaryMin), asc(jobs.salaryMax), desc(jobs.updatedAt)]
+          : filters.sort === "company_asc"
+            ? [asc(companies.name), asc(jobs.title), desc(jobs.updatedAt)]
+            : [desc(jobs.updatedAt), asc(companies.name), asc(jobs.title)]
+
   return db
     .select({
       appliedAt: jobs.appliedAt,
@@ -27,8 +60,8 @@ export async function listJobsForUser(userId: string) {
     })
     .from(jobs)
     .innerJoin(companies, eq(jobs.companyId, companies.id))
-    .where(eq(jobs.userId, userId))
-    .orderBy(desc(jobs.updatedAt))
+    .where(and(...conditions))
+    .orderBy(...orderBy)
 }
 
 export async function listCompanyNameOptions(userId: string) {
