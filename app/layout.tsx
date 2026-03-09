@@ -5,7 +5,7 @@ import { Geist, Geist_Mono } from "next/font/google"
 
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
-import { Button, buttonVariants } from "@/components/ui/button"
+import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
 const fontSans = Geist({
@@ -31,6 +31,22 @@ export const metadata: Metadata = {
   },
   description: "Track applications, interviews, and offers in one place.",
 }
+
+const desktopNavLinkClass =
+  "inline-flex h-9 items-center justify-start gap-1.5 rounded-2xl px-3 text-sm font-medium transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+
+const desktopNavLinkActiveClass =
+  "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+
+const desktopNavLinkIdleClass = "hover:bg-muted hover:text-foreground"
+
+const mobileNavLinkClass =
+  "inline-flex h-7 shrink-0 items-center justify-center rounded-2xl px-2.5 text-[0.8rem] font-medium transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+
+const mobileNavLinkActiveClass =
+  "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+
+const mobileNavLinkIdleClass = "hover:bg-muted hover:text-foreground"
 
 export default function RootLayout({
   children,
@@ -68,11 +84,12 @@ export default function RootLayout({
                     <Link
                       key={label}
                       href={href}
-                      className={buttonVariants({
-                        variant: label === "Overview" ? "secondary" : "ghost",
-                        size: "lg",
-                        className: "justify-start rounded-2xl",
-                      })}
+                      className={cn(
+                        desktopNavLinkClass,
+                        label === "Overview"
+                          ? desktopNavLinkActiveClass
+                          : desktopNavLinkIdleClass
+                      )}
                     >
                       <Icon data-icon="inline-start" />
                       {label}
@@ -126,11 +143,12 @@ export default function RootLayout({
                   <Link
                     key={label}
                     href={href}
-                    className={buttonVariants({
-                      variant: label === "Overview" ? "secondary" : "ghost",
-                      size: "sm",
-                      className: "shrink-0 rounded-2xl",
-                    })}
+                    className={cn(
+                      mobileNavLinkClass,
+                      label === "Overview"
+                        ? mobileNavLinkActiveClass
+                        : mobileNavLinkIdleClass
+                    )}
                   >
                     {label}
                   </Link>
