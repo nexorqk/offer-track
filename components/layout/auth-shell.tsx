@@ -16,16 +16,16 @@ export function AuthShell({
                 Keep every conversation, interview, and offer in one flow.
               </h2>
               <p className="text-sm leading-6 text-muted-foreground">
-                Auth routes now live outside the dashboard shell, so onboarding
-                and account flows can evolve independently.
+                Auth routes now live outside the dashboard shell, so account
+                flows can evolve independently from the product workspace.
               </p>
             </div>
           </div>
 
           <div className="rounded-[1.75rem] border bg-background/80 p-5">
             <p className="text-sm text-muted-foreground">
-              Next step: connect these pages to your auth provider and move form
-              validation into <code>features/auth</code>.
+              Email/password auth is backed by Railway Postgres and Drizzle.
+              Validation and server actions now live in <code>features/auth</code>.
             </p>
           </div>
         </section>

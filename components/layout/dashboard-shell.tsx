@@ -3,6 +3,7 @@ import {
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
+import { logoutAction } from "@/features/auth/server/actions"
 
 import { DashboardNavLink } from "./dashboard-nav-link"
 
@@ -18,8 +19,10 @@ const navigation = [
 
 export function DashboardShell({
   children,
+  userEmail,
 }: Readonly<{
   children: React.ReactNode
+  userEmail: string
 }>) {
   return (
     <div className="mx-auto flex min-h-svh max-w-7xl gap-4 px-4 py-4 sm:px-6 lg:px-8">
@@ -49,15 +52,17 @@ export function DashboardShell({
 
         <div className="flex flex-col gap-3 rounded-[1.5rem] border bg-background p-4">
           <div className="flex items-center justify-between">
-            <span className="text-sm font-medium">This week</span>
+            <span className="text-sm font-medium">Signed in</span>
             <span className="rounded-full bg-secondary px-2 py-1 text-xs text-secondary-foreground">
-              3 interviews
+              Account
             </span>
           </div>
-          <p className="text-sm text-muted-foreground">
-            Follow up on active applications and keep notes close to the
-            timeline.
-          </p>
+          <p className="text-sm text-muted-foreground">{userEmail}</p>
+          <form action={logoutAction}>
+            <Button type="submit" variant="outline" size="sm">
+              Log out
+            </Button>
+          </form>
         </div>
       </aside>
 
