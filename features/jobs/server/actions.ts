@@ -193,7 +193,7 @@ export async function createJobAction(
 
   revalidatePath("/dashboard")
   revalidatePath("/jobs")
-  redirect(`/jobs/${job.id}`)
+  redirect("/jobs?view=kanban")
 }
 
 export async function createJobContactAction(
