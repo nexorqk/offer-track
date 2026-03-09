@@ -8,8 +8,7 @@ import { redirect } from "next/navigation"
 
 import { db } from "@/lib/db"
 import { sessions, users } from "@/lib/db/schema"
-
-const SESSION_COOKIE_NAME = "offer_track_session"
+import { SESSION_COOKIE_NAME } from "@/features/auth/session"
 const SESSION_DURATION_MS = 1000 * 60 * 60 * 24 * 30
 
 export type SessionUser = {

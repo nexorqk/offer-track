@@ -20,6 +20,7 @@ type AuthFormProps = {
   alternateText: string
   description: string
   mode: "login" | "register"
+  redirectTo?: string
   submitLabel: string
   title: string
 }
@@ -35,6 +36,7 @@ export function AuthForm({
   alternateText,
   description,
   mode,
+  redirectTo,
   submitLabel,
   title,
 }: AuthFormProps) {
@@ -58,6 +60,8 @@ export function AuthForm({
       </div>
 
       <form action={formAction} className="grid gap-4">
+        <input type="hidden" name="redirectTo" value={redirectTo ?? ""} />
+
         <div className="grid gap-2">
           <label htmlFor="email" className="text-sm font-medium">
             Email

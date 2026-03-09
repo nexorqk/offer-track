@@ -4,6 +4,7 @@ import type { ZodError } from "zod"
 import { redirect } from "next/navigation"
 
 import { loginSchema, registerSchema } from "@/features/auth/schemas/auth"
+import { normalizeRedirectTarget } from "@/features/auth/route-protection"
 import {
   clearSession,
   createSession,
@@ -23,6 +24,10 @@ function getString(formData: FormData, key: string) {
   return typeof value === "string" ? value : ""
 }
 
+function getRedirectTarget(formData: FormData) {
+  return normalizeRedirectTarget(getString(formData, "redirectTo"))
+}
+
 function isUniqueViolation(error: unknown) {
   return (
     typeof error === "object" &&
@@ -36,6 +41,7 @@ export async function loginAction(
   _previousState: AuthFormState,
   formData: FormData
 ): Promise<AuthFormState> {
+  const redirectTo = getRedirectTarget(formData)
   const parsed = loginSchema.safeParse({
     email: getString(formData, "email"),
     password: getString(formData, "password"),
@@ -59,13 +65,14 @@ export async function loginAction(
   }
 
   await createSession(user.id)
-  redirect("/dashboard")
+  redirect(redirectTo)
 }
 
 export async function registerAction(
   _previousState: AuthFormState,
   formData: FormData
 ): Promise<AuthFormState> {
+  const redirectTo = getRedirectTarget(formData)
   const parsed = registerSchema.safeParse({
     email: getString(formData, "email"),
     password: getString(formData, "password"),
@@ -101,7 +108,7 @@ export async function registerAction(
     throw error
   }
 
-  redirect("/dashboard")
+  redirect(redirectTo)
 }
 
 export async function logoutAction() {
