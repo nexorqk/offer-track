@@ -1,12 +1,16 @@
 "use server"
 
-import type { ZodError } from "zod"
 import { and, eq, sql } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
+import { z, type ZodError } from "zod"
 
 import { requireCurrentUser } from "@/features/auth/server/auth"
-import { jobFormSchema } from "@/features/jobs/schemas/job"
+import {
+  jobFormSchema,
+  jobStatusOptions,
+  type JobFormInput,
+} from "@/features/jobs/schemas/job"
 import {
   buildJobStageHistoryEntry,
   normalizeCompanyNameKey,
@@ -256,6 +260,71 @@ export async function updateJobAction(
   revalidatePath("/jobs")
   revalidatePath(`/jobs/${jobId}`)
   redirect(`/jobs/${jobId}`)
+}
+
+const updateJobStatusSchema = z.object({
+  jobId: z.string().trim().min(1),
+  status: z.enum(jobStatusOptions),
+})
+
+export async function updateJobStatusAction(input: {
+  jobId: string
+  status: NonNullable<JobFormInput["status"]>
+}) {
+  const user = await requireCurrentUser()
+  const parsed = updateJobStatusSchema.safeParse(input)
+
+  if (!parsed.success) {
+    throw new Error("Invalid job status update payload.")
+  }
+
+  const [existingJob] = await db
+    .select({
+      id: jobs.id,
+      status: jobs.status,
+    })
+    .from(jobs)
+    .where(and(eq(jobs.id, parsed.data.jobId), eq(jobs.userId, user.id)))
+    .limit(1)
+
+  if (!existingJob) {
+    throw new Error("This job no longer exists.")
+  }
+
+  if (existingJob.status === parsed.data.status) {
+    return {
+      status: parsed.data.status,
+    }
+  }
+
+  const now = new Date()
+
+  await db
+    .update(jobs)
+    .set({
+      status: parsed.data.status,
+      updatedAt: now,
+    })
+    .where(and(eq(jobs.id, parsed.data.jobId), eq(jobs.userId, user.id)))
+
+  const stageHistoryEntry = buildJobStageHistoryEntry({
+    changedAt: now,
+    jobId: parsed.data.jobId,
+    nextStatus: parsed.data.status,
+    previousStatus: existingJob.status,
+  })
+
+  if (stageHistoryEntry) {
+    await db.insert(jobStageHistory).values(stageHistoryEntry)
+  }
+
+  revalidatePath("/dashboard")
+  revalidatePath("/jobs")
+  revalidatePath(`/jobs/${parsed.data.jobId}`)
+
+  return {
+    status: parsed.data.status,
+  }
 }
 
 export async function deleteJobAction(formData: FormData) {

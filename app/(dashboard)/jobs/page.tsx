@@ -13,11 +13,13 @@ import { buttonVariants } from "@/components/ui/button-variants"
 import { Input } from "@/components/ui/input"
 import { requireCurrentUser } from "@/features/auth/server/auth"
 import { JobForm } from "@/features/jobs/components/job-form"
+import { JobsKanbanBoard } from "@/features/jobs/components/jobs-kanban-board"
 import {
   hasActiveJobListFilters,
   jobListPriorityOptions,
   jobListSortOptions,
   jobListStatusOptions,
+  jobListViewOptions,
   jobListWorkModeOptions,
   parseJobListFilters,
   type JobListFilters,
@@ -162,15 +164,35 @@ export default async function JobsPage({ searchParams }: JobsPageProps) {
                     : "Search by company, role, or location and sort the pipeline the way you work."}
                 </p>
               </div>
-              <div className="inline-flex items-center gap-2 rounded-full border bg-background px-3 py-1.5 text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
-                <SlidersHorizontal className="size-3.5" />
-                {hasActiveFilters ? "Filtered view" : "Full pipeline"}
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="inline-flex items-center gap-2 rounded-full border bg-background px-3 py-1.5 text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
+                  <SlidersHorizontal className="size-3.5" />
+                  {hasActiveFilters ? "Filtered view" : "Full pipeline"}
+                </div>
+                <div className="inline-flex rounded-full border bg-background p-1">
+                  {jobListViewOptions.map((view) => (
+                    <Link
+                      key={view}
+                      href={buildJobsListHref(filters, { view })}
+                      className={cn(
+                        buttonVariants({
+                          size: "sm",
+                          variant: filters.view === view ? "secondary" : "ghost",
+                        }),
+                        "rounded-full",
+                      )}
+                    >
+                      {view === "list" ? "List" : "Kanban"}
+                    </Link>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
         </div>
 
         <form method="get" className="grid gap-3 border-b p-4 lg:grid-cols-[minmax(0,1.1fr)_12rem_12rem_12rem_12rem_auto]">
+          <input type="hidden" name="view" value={filters.view} />
           <div className="grid gap-2">
             <label htmlFor="jobs-search" className="text-sm font-medium">
               Search
@@ -277,6 +299,10 @@ export default async function JobsPage({ searchParams }: JobsPageProps) {
               ? "No jobs match the current filters. Adjust the search or reset the list."
               : "No jobs yet. Add the first role from the panel above."}
           </div>
+        ) : filters.view === "kanban" ? (
+          <div className="p-4">
+            <JobsKanbanBoard jobs={jobs} />
+          </div>
         ) : (
           <div className="grid gap-3 p-4">
             {jobs.map((job) => (
@@ -374,6 +400,10 @@ function buildJobsListHref(
 
   if (mergedFilters.sort !== "updated_desc") {
     params.set("sort", mergedFilters.sort)
+  }
+
+  if (mergedFilters.view !== "list") {
+    params.set("view", mergedFilters.view)
   }
 
   const queryString = params.toString()

@@ -50,6 +50,20 @@ export type JobFormInitialData = {
   id: string
 } & JobFormValues
 
+export type JobListItem = {
+  appliedAt: Date | null
+  companyName: string
+  id: string
+  location: string | null
+  priority: string
+  salaryMax: number | null
+  salaryMin: number | null
+  status: NonNullable<JobFormInput["status"]>
+  title: string
+  updatedAt: Date
+  workMode: NonNullable<JobFormInput["workMode"]> | null
+}
+
 export function toJobFormValues(input: Partial<JobFormInput>): JobFormValues {
   return {
     appliedAt: input.appliedAt ? formatDateForInput(input.appliedAt) : "",

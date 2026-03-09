@@ -9,6 +9,7 @@ describe("job list filters", () => {
       q: "",
       sort: "updated_desc",
       status: "all",
+      view: "list",
       workMode: "all",
     })
   })
@@ -20,6 +21,7 @@ describe("job list filters", () => {
         q: "  atlas ",
         sort: "salary_desc",
         status: "technical",
+        view: "kanban",
         workMode: "remote",
       }),
     ).toEqual({
@@ -27,6 +29,7 @@ describe("job list filters", () => {
       q: "atlas",
       sort: "salary_desc",
       status: "technical",
+      view: "kanban",
       workMode: "remote",
     })
   })
@@ -38,6 +41,7 @@ describe("job list filters", () => {
         q: ["atlas", "signal"],
         sort: "newest",
         status: "in_progress",
+        view: "board",
         workMode: "distributed",
       }),
     ).toEqual({
@@ -45,6 +49,7 @@ describe("job list filters", () => {
       q: "",
       sort: "updated_desc",
       status: "all",
+      view: "list",
       workMode: "all",
     })
   })

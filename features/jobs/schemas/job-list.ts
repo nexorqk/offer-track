@@ -14,6 +14,7 @@ export const jobListSortOptions = [
   "company_asc",
 ] as const
 
+export const jobListViewOptions = ["list", "kanban"] as const
 export const jobListStatusOptions = ["all", ...jobStatusOptions] as const
 export const jobListPriorityOptions = ["all", ...jobPriorityOptions] as const
 export const jobListWorkModeOptions = ["all", ...workModeOptions] as const
@@ -23,6 +24,7 @@ export const defaultJobListFilters = {
   q: "",
   sort: "updated_desc",
   status: "all",
+  view: "list",
   workMode: "all",
 } as const
 
@@ -36,6 +38,7 @@ export const jobListFiltersSchema = z.object({
   q: searchParamValue,
   sort: z.enum(jobListSortOptions).catch(defaultJobListFilters.sort),
   status: z.enum(jobListStatusOptions).catch(defaultJobListFilters.status),
+  view: z.enum(jobListViewOptions).catch(defaultJobListFilters.view),
   workMode: z.enum(jobListWorkModeOptions).catch(defaultJobListFilters.workMode),
 })
 
@@ -53,6 +56,7 @@ export function hasActiveJobListFilters(filters: JobListFilters) {
     filters.priority !== defaultJobListFilters.priority ||
     filters.sort !== defaultJobListFilters.sort ||
     filters.status !== defaultJobListFilters.status ||
+    filters.view !== defaultJobListFilters.view ||
     filters.workMode !== defaultJobListFilters.workMode
   )
 }
