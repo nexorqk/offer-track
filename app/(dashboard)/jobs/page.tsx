@@ -9,7 +9,7 @@ import {
   X,
 } from "lucide-react"
 
-import { buttonVariants } from "@/components/ui/button"
+import { buttonVariants } from "@/components/ui/button-variants"
 import { Input } from "@/components/ui/input"
 import { requireCurrentUser } from "@/features/auth/server/auth"
 import { JobForm } from "@/features/jobs/components/job-form"
