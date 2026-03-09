@@ -12,6 +12,7 @@ import {
 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
+import type { DashboardNavIcon } from "@/components/layout/dashboard-navigation"
 
 const iconMap = {
   analytics: BarChart3,
@@ -24,27 +25,30 @@ const iconMap = {
 } as const
 
 type DashboardNavLinkProps = {
+  collapsed?: boolean
+  description?: string
   href: string
   label: string
-  icon?: keyof typeof iconMap
+  icon?: DashboardNavIcon
   mobile?: boolean
 }
 
 const desktopNavLinkClass =
-  "inline-flex h-9 items-center justify-start gap-1.5 rounded-2xl px-3 text-sm font-medium transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+  "inline-flex min-h-11 items-center justify-start gap-2 rounded-[1.15rem] px-3 text-sm font-medium transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
 
 const desktopNavLinkActiveClass =
-  "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+  "bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary/80"
 
 const desktopNavLinkIdleClass = "hover:bg-muted hover:text-foreground"
 
 const mobileNavLinkClass =
-  "inline-flex h-7 shrink-0 items-center justify-center rounded-2xl px-2.5 text-[0.8rem] font-medium transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+  "inline-flex min-h-18 flex-col items-center justify-center gap-1 rounded-[1.35rem] px-2 py-2 text-[0.72rem] font-medium transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
 
 const mobileNavLinkActiveClass =
-  "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+  "border bg-background text-foreground shadow-sm"
 
-const mobileNavLinkIdleClass = "hover:bg-muted hover:text-foreground"
+const mobileNavLinkIdleClass =
+  "border border-transparent text-muted-foreground hover:bg-muted/60 hover:text-foreground"
 
 function isActivePath(pathname: string, href: string) {
   if (href === "/dashboard") {
@@ -55,6 +59,8 @@ function isActivePath(pathname: string, href: string) {
 }
 
 export function DashboardNavLink({
+  collapsed = false,
+  description,
   href,
   label,
   icon,
@@ -67,8 +73,11 @@ export function DashboardNavLink({
   return (
     <Link
       href={href}
+      aria-current={active ? "page" : undefined}
+      aria-label={collapsed ? label : undefined}
       className={cn(
         mobile ? mobileNavLinkClass : desktopNavLinkClass,
+        !mobile && collapsed && "justify-center px-0",
         active
           ? mobile
             ? mobileNavLinkActiveClass
@@ -77,9 +86,10 @@ export function DashboardNavLink({
             ? mobileNavLinkIdleClass
             : desktopNavLinkIdleClass
       )}
+      title={collapsed ? description ?? label : undefined}
     >
       {Icon ? <Icon data-icon="inline-start" /> : null}
-      {label}
+      <span className={cn(!mobile && collapsed && "sr-only")}>{label}</span>
     </Link>
   )
 }
