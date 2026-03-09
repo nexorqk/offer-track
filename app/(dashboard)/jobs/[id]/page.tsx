@@ -13,6 +13,8 @@ import {
   listCompanyNameOptions,
 } from "@/features/jobs/server/queries"
 
+import { JobDetailWorkflow } from "./_components/job-detail-workflow"
+
 type JobDetailPageProps = {
   params: Promise<{
     id: string
@@ -33,17 +35,26 @@ export default async function JobDetailPage({ params }: JobDetailPageProps) {
 
   return (
     <div className="grid gap-5 pb-8 xl:grid-cols-[minmax(0,1.05fr)_minmax(19rem,0.65fr)]">
-      <article className="rounded-[2.25rem] border bg-background/92 p-5 shadow-sm">
-        <JobForm
-          action={updateJobAction}
-          companyOptions={companyOptions}
-          description="Adjust stage, comp assumptions, source details, and company assignment without leaving the job record."
-          initialValues={job.formValues}
+      <div className="grid gap-5">
+        <article className="rounded-[2.25rem] border bg-background/92 p-5 shadow-sm">
+          <JobForm
+            action={updateJobAction}
+            companyOptions={companyOptions}
+            description="Adjust stage, comp assumptions, source details, and company assignment without leaving the job record."
+            initialValues={job.formValues}
+            jobId={job.formValues.id}
+            submitLabel="Save changes"
+            title="Edit job"
+          />
+        </article>
+
+        <JobDetailWorkflow
+          contacts={job.contacts}
           jobId={job.formValues.id}
-          submitLabel="Save changes"
-          title="Edit job"
+          notes={job.notes}
+          tasks={job.tasks}
         />
-      </article>
+      </div>
 
       <div className="grid gap-5 self-start">
         <article className="rounded-[2rem] border bg-background/92 p-5 shadow-sm">

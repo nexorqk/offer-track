@@ -6,6 +6,8 @@ import { redirect } from "next/navigation"
 import { z, type ZodError } from "zod"
 
 import { requireCurrentUser } from "@/features/auth/server/auth"
+import { contactFormSchema } from "@/features/contacts/schemas/contact"
+import { jobNoteFormSchema } from "@/features/jobs/schemas/job-note"
 import {
   jobFormSchema,
   jobStatusOptions,
@@ -16,11 +18,21 @@ import {
   normalizeCompanyNameKey,
 } from "@/features/jobs/server/job-write"
 import type { JobFormState } from "@/features/jobs/types/job"
+import type {
+  JobDetailMutationState,
+  JobContactFieldName,
+  JobNoteFieldName,
+  JobTaskFieldName,
+} from "@/features/jobs/types/job-detail"
+import { taskFormSchema } from "@/features/tasks/schemas/task"
 import { db } from "@/lib/db"
 import {
   companies,
+  contacts,
   jobStageHistory,
   jobs,
+  notes,
+  tasks,
 } from "@/lib/db/schema"
 
 function getFieldErrors(error: ZodError): JobFormState["fieldErrors"] {
@@ -43,6 +55,19 @@ function getSalaryRangeError(formData: FormData) {
   }
 
   return ["Maximum salary must be greater than or equal to minimum salary"]
+}
+
+async function getOwnedJob(userId: string, jobId: string) {
+  const [job] = await db
+    .select({
+      companyId: jobs.companyId,
+      id: jobs.id,
+    })
+    .from(jobs)
+    .where(and(eq(jobs.id, jobId), eq(jobs.userId, userId)))
+    .limit(1)
+
+  return job ?? null
 }
 
 function getString(formData: FormData, key: string) {
@@ -169,6 +194,168 @@ export async function createJobAction(
   revalidatePath("/dashboard")
   revalidatePath("/jobs")
   redirect(`/jobs/${job.id}`)
+}
+
+export async function createJobContactAction(
+  _previousState: JobDetailMutationState<JobContactFieldName>,
+  formData: FormData,
+): Promise<JobDetailMutationState<JobContactFieldName>> {
+  const user = await requireCurrentUser()
+  const jobId = getString(formData, "jobId")
+
+  if (!jobId) {
+    return {
+      message: "Job identifier is missing.",
+      status: "error",
+    }
+  }
+
+  const parsed = contactFormSchema.safeParse({
+    email: getString(formData, "email"),
+    linkedinUrl: getString(formData, "linkedinUrl"),
+    name: getString(formData, "name"),
+    notes: getString(formData, "notes"),
+    role: getString(formData, "role"),
+  })
+
+  if (!parsed.success) {
+    return {
+      fieldErrors: parsed.error.flatten().fieldErrors,
+      message: "Fix the highlighted fields and try again.",
+      status: "error",
+    }
+  }
+
+  const job = await getOwnedJob(user.id, jobId)
+
+  if (!job) {
+    return {
+      message: "This job no longer exists.",
+      status: "error",
+    }
+  }
+
+  await db.insert(contacts).values({
+    companyId: job.companyId,
+    email: parsed.data.email,
+    jobId,
+    linkedinUrl: parsed.data.linkedinUrl,
+    name: parsed.data.name,
+    notes: parsed.data.notes,
+    role: parsed.data.role,
+    userId: user.id,
+  })
+
+  revalidatePath(`/jobs/${jobId}`)
+  revalidatePath("/contacts")
+
+  return {
+    message: "Recruiter contact added.",
+    status: "success",
+  }
+}
+
+export async function createJobTaskAction(
+  _previousState: JobDetailMutationState<JobTaskFieldName>,
+  formData: FormData,
+): Promise<JobDetailMutationState<JobTaskFieldName>> {
+  const user = await requireCurrentUser()
+  const jobId = getString(formData, "jobId")
+
+  if (!jobId) {
+    return {
+      message: "Job identifier is missing.",
+      status: "error",
+    }
+  }
+
+  const parsed = taskFormSchema.safeParse({
+    dueDate: getString(formData, "dueDate"),
+    title: getString(formData, "title"),
+  })
+
+  if (!parsed.success) {
+    return {
+      fieldErrors: parsed.error.flatten().fieldErrors,
+      message: "Fix the highlighted fields and try again.",
+      status: "error",
+    }
+  }
+
+  const job = await getOwnedJob(user.id, jobId)
+
+  if (!job) {
+    return {
+      message: "This job no longer exists.",
+      status: "error",
+    }
+  }
+
+  await db.insert(tasks).values({
+    dueDate: parsed.data.dueDate,
+    jobId,
+    title: parsed.data.title,
+    userId: user.id,
+  })
+
+  revalidatePath("/dashboard")
+  revalidatePath(`/jobs/${jobId}`)
+  revalidatePath("/tasks")
+
+  return {
+    message: "Follow-up task created.",
+    status: "success",
+  }
+}
+
+export async function createJobNoteAction(
+  _previousState: JobDetailMutationState<JobNoteFieldName>,
+  formData: FormData,
+): Promise<JobDetailMutationState<JobNoteFieldName>> {
+  const user = await requireCurrentUser()
+  const jobId = getString(formData, "jobId")
+
+  if (!jobId) {
+    return {
+      message: "Job identifier is missing.",
+      status: "error",
+    }
+  }
+
+  const parsed = jobNoteFormSchema.safeParse({
+    content: getString(formData, "content"),
+  })
+
+  if (!parsed.success) {
+    return {
+      fieldErrors: parsed.error.flatten().fieldErrors,
+      message: "Write a note before saving.",
+      status: "error",
+    }
+  }
+
+  const job = await getOwnedJob(user.id, jobId)
+
+  if (!job) {
+    return {
+      message: "This job no longer exists.",
+      status: "error",
+    }
+  }
+
+  await db.insert(notes).values({
+    content: parsed.data.content,
+    jobId,
+    userId: user.id,
+  })
+
+  revalidatePath("/dashboard")
+  revalidatePath(`/jobs/${jobId}`)
+
+  return {
+    message: "Note saved.",
+    status: "success",
+  }
 }
 
 export async function updateJobAction(

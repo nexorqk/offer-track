@@ -6,9 +6,17 @@ import { defaultJobListFilters, type JobListFilters } from "@/features/jobs/sche
 import { db } from "@/lib/db"
 import {
   companies,
+  contacts,
   jobStageHistory,
   jobs,
+  notes,
+  tasks,
 } from "@/lib/db/schema"
+import type {
+  JobContactListItem,
+  JobNoteListItem,
+  JobTaskListItem,
+} from "@/features/jobs/types/job-detail"
 import { toJobFormValues } from "@/features/jobs/types/job"
 
 export async function listJobsForUser(
@@ -115,18 +123,55 @@ export async function getJobDetailForUser(userId: string, jobId: string) {
     return null
   }
 
-  const history = await db
-    .select({
-      changedAt: jobStageHistory.changedAt,
-      fromStatus: jobStageHistory.fromStatus,
-      id: jobStageHistory.id,
-      toStatus: jobStageHistory.toStatus,
-    })
-    .from(jobStageHistory)
-    .where(eq(jobStageHistory.jobId, jobId))
-    .orderBy(desc(jobStageHistory.changedAt))
+  const [history, linkedContacts, linkedTasks, linkedNotes] = await Promise.all([
+    db
+      .select({
+        changedAt: jobStageHistory.changedAt,
+        fromStatus: jobStageHistory.fromStatus,
+        id: jobStageHistory.id,
+        toStatus: jobStageHistory.toStatus,
+      })
+      .from(jobStageHistory)
+      .where(eq(jobStageHistory.jobId, jobId))
+      .orderBy(desc(jobStageHistory.changedAt)),
+    db
+      .select({
+        createdAt: contacts.createdAt,
+        email: contacts.email,
+        id: contacts.id,
+        linkedinUrl: contacts.linkedinUrl,
+        name: contacts.name,
+        notes: contacts.notes,
+        role: contacts.role,
+      })
+      .from(contacts)
+      .where(and(eq(contacts.userId, userId), eq(contacts.jobId, jobId)))
+      .orderBy(desc(contacts.updatedAt)),
+    db
+      .select({
+        completed: tasks.completed,
+        createdAt: tasks.createdAt,
+        dueDate: tasks.dueDate,
+        id: tasks.id,
+        title: tasks.title,
+      })
+      .from(tasks)
+      .where(and(eq(tasks.userId, userId), eq(tasks.jobId, jobId)))
+      .orderBy(asc(tasks.completed), asc(tasks.dueDate), desc(tasks.createdAt)),
+    db
+      .select({
+        content: notes.content,
+        createdAt: notes.createdAt,
+        id: notes.id,
+        updatedAt: notes.updatedAt,
+      })
+      .from(notes)
+      .where(and(eq(notes.userId, userId), eq(notes.jobId, jobId)))
+      .orderBy(desc(notes.updatedAt)),
+  ])
 
   return {
+    contacts: linkedContacts satisfies JobContactListItem[],
     formValues: {
       id: job.id,
       ...toJobFormValues({
@@ -152,5 +197,7 @@ export async function getJobDetailForUser(userId: string, jobId: string) {
       createdAt: job.createdAt,
       updatedAt: job.updatedAt,
     },
+    notes: linkedNotes satisfies JobNoteListItem[],
+    tasks: linkedTasks satisfies JobTaskListItem[],
   }
 }

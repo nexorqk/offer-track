@@ -1,0 +1,53 @@
+export type JobDetailMutationState<FieldName extends string> = {
+  fieldErrors?: Partial<Record<FieldName, string[]>>
+  message?: string
+  status: "error" | "idle" | "success"
+}
+
+export type JobContactFieldName =
+  | "email"
+  | "linkedinUrl"
+  | "name"
+  | "notes"
+  | "role"
+
+export type JobTaskFieldName = "dueDate" | "title"
+
+export type JobNoteFieldName = "content"
+
+export type JobContactListItem = {
+  createdAt: Date
+  email: string | null
+  id: string
+  linkedinUrl: string | null
+  name: string
+  notes: string | null
+  role: string | null
+}
+
+export type JobTaskListItem = {
+  completed: boolean
+  createdAt: Date
+  dueDate: Date | null
+  id: string
+  title: string
+}
+
+export type JobNoteListItem = {
+  content: string
+  createdAt: Date
+  id: string
+  updatedAt: Date
+}
+
+export const initialJobContactState: JobDetailMutationState<JobContactFieldName> = {
+  status: "idle",
+}
+
+export const initialJobTaskState: JobDetailMutationState<JobTaskFieldName> = {
+  status: "idle",
+}
+
+export const initialJobNoteState: JobDetailMutationState<JobNoteFieldName> = {
+  status: "idle",
+}
