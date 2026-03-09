@@ -1,6 +1,10 @@
 import { z } from "zod"
 
-import { jobStatusOptions } from "@/features/jobs/schemas/job"
+import {
+  jobPriorityOptions,
+  jobStatusOptions,
+  workModeOptions,
+} from "@/features/jobs/schemas/job"
 
 export const jobListSortOptions = [
   "updated_desc",
@@ -11,11 +15,15 @@ export const jobListSortOptions = [
 ] as const
 
 export const jobListStatusOptions = ["all", ...jobStatusOptions] as const
+export const jobListPriorityOptions = ["all", ...jobPriorityOptions] as const
+export const jobListWorkModeOptions = ["all", ...workModeOptions] as const
 
 export const defaultJobListFilters = {
+  priority: "all",
   q: "",
   sort: "updated_desc",
   status: "all",
+  workMode: "all",
 } as const
 
 const searchParamValue = z
@@ -24,9 +32,11 @@ const searchParamValue = z
   .catch(defaultJobListFilters.q)
 
 export const jobListFiltersSchema = z.object({
+  priority: z.enum(jobListPriorityOptions).catch(defaultJobListFilters.priority),
   q: searchParamValue,
   sort: z.enum(jobListSortOptions).catch(defaultJobListFilters.sort),
   status: z.enum(jobListStatusOptions).catch(defaultJobListFilters.status),
+  workMode: z.enum(jobListWorkModeOptions).catch(defaultJobListFilters.workMode),
 })
 
 export type JobListFilters = z.infer<typeof jobListFiltersSchema>
@@ -40,7 +50,9 @@ export function parseJobListFilters(
 export function hasActiveJobListFilters(filters: JobListFilters) {
   return (
     filters.q.length > 0 ||
+    filters.priority !== defaultJobListFilters.priority ||
     filters.sort !== defaultJobListFilters.sort ||
-    filters.status !== defaultJobListFilters.status
+    filters.status !== defaultJobListFilters.status ||
+    filters.workMode !== defaultJobListFilters.workMode
   )
 }

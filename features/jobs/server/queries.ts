@@ -21,6 +21,14 @@ export async function listJobsForUser(
     conditions.push(eq(jobs.status, filters.status))
   }
 
+  if (filters.priority !== "all") {
+    conditions.push(eq(jobs.priority, filters.priority))
+  }
+
+  if (filters.workMode !== "all") {
+    conditions.push(eq(jobs.workMode, filters.workMode))
+  }
+
   if (filters.q) {
     const pattern = `%${filters.q}%`
 

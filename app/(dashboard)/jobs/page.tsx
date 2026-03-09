@@ -15,9 +15,12 @@ import { requireCurrentUser } from "@/features/auth/server/auth"
 import { JobForm } from "@/features/jobs/components/job-form"
 import {
   hasActiveJobListFilters,
+  jobListPriorityOptions,
   jobListSortOptions,
   jobListStatusOptions,
+  jobListWorkModeOptions,
   parseJobListFilters,
+  type JobListFilters,
 } from "@/features/jobs/schemas/job-list"
 import { createJobAction } from "@/features/jobs/server/actions"
 import {
@@ -25,6 +28,7 @@ import {
   listJobsForUser,
 } from "@/features/jobs/server/queries"
 import { emptyJobFormValues } from "@/features/jobs/types/job"
+import { cn } from "@/lib/utils"
 
 type JobsPageProps = {
   searchParams: Promise<Record<string, string | string[] | undefined>>
@@ -32,6 +36,15 @@ type JobsPageProps = {
 
 const selectClassName =
   "flex h-11 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm shadow-xs transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+
+const quickFilterStatuses = [
+  { label: "All", value: "all" },
+  { label: "Applied", value: "applied" },
+  { label: "Technical", value: "technical" },
+  { label: "Final", value: "final" },
+  { label: "Offer", value: "offer" },
+  { label: "Rejected", value: "rejected" },
+] as const
 
 export default async function JobsPage({ searchParams }: JobsPageProps) {
   const user = await requireCurrentUser()
@@ -157,7 +170,7 @@ export default async function JobsPage({ searchParams }: JobsPageProps) {
           </div>
         </div>
 
-        <form method="get" className="grid gap-3 border-b p-4 lg:grid-cols-[minmax(0,1fr)_13rem_13rem_auto]">
+        <form method="get" className="grid gap-3 border-b p-4 lg:grid-cols-[minmax(0,1.1fr)_12rem_12rem_12rem_12rem_auto]">
           <div className="grid gap-2">
             <label htmlFor="jobs-search" className="text-sm font-medium">
               Search
@@ -176,6 +189,26 @@ export default async function JobsPage({ searchParams }: JobsPageProps) {
             name="status"
             options={jobListStatusOptions.map((value) => ({
               label: value === "all" ? "All statuses" : formatStatusLabel(value),
+              value,
+            }))}
+          />
+
+          <FilterSelect
+            defaultValue={filters.priority}
+            label="Priority"
+            name="priority"
+            options={jobListPriorityOptions.map((value) => ({
+              label: value === "all" ? "All priorities" : capitalize(value),
+              value,
+            }))}
+          />
+
+          <FilterSelect
+            defaultValue={filters.workMode}
+            label="Work mode"
+            name="workMode"
+            options={jobListWorkModeOptions.map((value) => ({
+              label: value === "all" ? "All modes" : capitalize(value),
               value,
             }))}
           />
@@ -205,6 +238,38 @@ export default async function JobsPage({ searchParams }: JobsPageProps) {
             ) : null}
           </div>
         </form>
+
+        <div className="flex flex-wrap gap-2 border-b px-4 py-3">
+          {quickFilterStatuses.map((chip) => {
+            const href = buildJobsListHref(filters, {
+              status: chip.value,
+            })
+            const isActive = filters.status === chip.value
+            const count =
+              chip.value === "all"
+                ? totalJobs.length
+                : totalJobs.filter((job) => job.status === chip.value).length
+
+            return (
+              <Link
+                key={chip.value}
+                href={href}
+                className={cn(
+                  buttonVariants({
+                    size: "sm",
+                    variant: isActive ? "secondary" : "outline",
+                  }),
+                  "rounded-full",
+                )}
+              >
+                {chip.label}
+                <span className="rounded-full bg-background/80 px-1.5 py-0.5 text-[0.68rem] leading-none text-muted-foreground">
+                  {count}
+                </span>
+              </Link>
+            )
+          })}
+        </div>
 
         {jobs.length === 0 ? (
           <div className="px-5 py-10 text-sm text-muted-foreground">
@@ -279,6 +344,40 @@ function FilterSelect({
       </select>
     </div>
   )
+}
+
+function buildJobsListHref(
+  currentFilters: JobListFilters,
+  nextFilters: Partial<JobListFilters>,
+) {
+  const params = new URLSearchParams()
+  const mergedFilters = {
+    ...currentFilters,
+    ...nextFilters,
+  }
+
+  if (mergedFilters.q) {
+    params.set("q", mergedFilters.q)
+  }
+
+  if (mergedFilters.status !== "all") {
+    params.set("status", mergedFilters.status)
+  }
+
+  if (mergedFilters.priority !== "all") {
+    params.set("priority", mergedFilters.priority)
+  }
+
+  if (mergedFilters.workMode !== "all") {
+    params.set("workMode", mergedFilters.workMode)
+  }
+
+  if (mergedFilters.sort !== "updated_desc") {
+    params.set("sort", mergedFilters.sort)
+  }
+
+  const queryString = params.toString()
+  return queryString ? `/jobs?${queryString}` : "/jobs"
 }
 
 function StatCard({
