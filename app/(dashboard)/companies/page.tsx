@@ -1,11 +1,10 @@
-import { RoutePlaceholder } from "@/components/layout/route-placeholder"
+import { requireCurrentUser } from "@/features/auth/server/auth"
+import { CompaniesPageContent } from "@/features/companies/components/companies-page-content"
+import { listCompaniesForUser } from "@/features/companies/server/queries"
 
-export default function CompaniesPage() {
-  return (
-    <RoutePlaceholder
-      eyebrow="CRM"
-      title="Companies"
-      description="This route is reserved for company profiles, relationship history, and open roles."
-    />
-  )
+export default async function CompaniesPage() {
+  const user = await requireCurrentUser()
+  const companies = await listCompaniesForUser(user.id)
+
+  return <CompaniesPageContent {...companies} />
 }
