@@ -9,7 +9,7 @@ describe("job list filters", () => {
       q: "",
       sort: "updated_desc",
       status: "all",
-      view: "list",
+      view: "table",
       workMode: "all",
     })
   })
@@ -49,7 +49,22 @@ describe("job list filters", () => {
       q: "",
       sort: "updated_desc",
       status: "all",
-      view: "list",
+      view: "table",
+      workMode: "all",
+    })
+  })
+
+  it("maps the legacy list view to table", () => {
+    expect(
+      parseJobListFilters({
+        view: "list",
+      }),
+    ).toEqual({
+      priority: "all",
+      q: "",
+      sort: "updated_desc",
+      status: "all",
+      view: "table",
       workMode: "all",
     })
   })

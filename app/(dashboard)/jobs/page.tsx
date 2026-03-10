@@ -13,6 +13,7 @@ import { buttonVariants } from "@/components/ui/button-variants"
 import { Input } from "@/components/ui/input"
 import { requireCurrentUser } from "@/features/auth/server/auth"
 import { JobsKanbanBoard } from "@/features/jobs/components/jobs-kanban-board"
+import { JobsTableView } from "@/features/jobs/components/jobs-table-view"
 import {
   hasActiveJobListFilters,
   jobListPriorityOptions,
@@ -157,7 +158,7 @@ export default async function JobsPage({ searchParams }: JobsPageProps) {
                         "rounded-full",
                       )}
                     >
-                      {view === "list" ? "List" : "Kanban"}
+                      {view === "table" ? "Table" : "Kanban"}
                     </Link>
                   ))}
                 </div>
@@ -287,41 +288,7 @@ export default async function JobsPage({ searchParams }: JobsPageProps) {
             <JobsKanbanBoard jobs={jobs} />
           </div>
         ) : (
-          <div className="grid gap-3 p-4">
-            {jobs.map((job) => (
-              <Link
-                key={job.id}
-                href={`/jobs/${job.id}`}
-                className="grid gap-4 rounded-[1.75rem] border bg-[linear-gradient(180deg,color-mix(in_oklch,var(--color-background)_92%,transparent),color-mix(in_oklch,var(--color-muted)_22%,transparent))] p-4 transition-colors hover:bg-muted/30 md:grid-cols-[minmax(0,1.2fr)_auto]"
-              >
-                <div className="flex min-w-0 flex-col gap-3">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <strong className="text-base font-medium">{job.title}</strong>
-                    <StatusBadge status={job.status} />
-                    <PriorityBadge priority={job.priority} />
-                  </div>
-                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
-                    <span>{job.companyName}</span>
-                    {job.location ? <span>{job.location}</span> : null}
-                    {job.workMode ? <span>{capitalize(job.workMode)}</span> : null}
-                    {job.status === "wishlist" && !job.appliedAt ? <span>Not applied yet</span> : null}
-                    {job.appliedAt ? <span>Applied {formatDate(job.appliedAt)}</span> : null}
-                    {job.salaryMin || job.salaryMax ? (
-                      <span>{formatSalary(job.salaryMin, job.salaryMax)}</span>
-                    ) : null}
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between gap-3 text-sm text-muted-foreground md:flex-col md:items-end md:justify-center">
-                  <span>Updated {formatShortRelative(job.updatedAt)}</span>
-                  <span className="inline-flex items-center gap-1 font-medium text-foreground">
-                    Open
-                    <ChevronRight className="size-4" />
-                  </span>
-                </div>
-              </Link>
-            ))}
-          </div>
+          <JobsTableView jobs={jobs} />
         )}
       </section>
     </div>
@@ -385,7 +352,7 @@ function buildJobsListHref(
     params.set("sort", mergedFilters.sort)
   }
 
-  if (mergedFilters.view !== "list") {
+  if (mergedFilters.view !== "table") {
     params.set("view", mergedFilters.view)
   }
 
@@ -420,72 +387,6 @@ function StatCard({
       <p className="mt-3 text-sm text-muted-foreground">{note}</p>
     </div>
   )
-}
-
-function StatusBadge({ status }: { status: string }) {
-  const tone =
-    status === "offer"
-      ? "bg-emerald-500/12 text-emerald-700 dark:text-emerald-300"
-      : status === "rejected"
-        ? "bg-rose-500/12 text-rose-700 dark:text-rose-300"
-        : status === "technical" || status === "final"
-          ? "bg-cyan-500/12 text-cyan-700 dark:text-cyan-300"
-          : "bg-secondary text-secondary-foreground"
-
-  return (
-    <span className={`rounded-full px-2 py-1 text-[0.68rem] font-medium uppercase tracking-[0.18em] ${tone}`}>
-      {formatStatusLabel(status)}
-    </span>
-  )
-}
-
-function PriorityBadge({ priority }: { priority: string }) {
-  const tone =
-    priority === "high"
-      ? "border-orange-500/20 text-orange-700 dark:text-orange-300"
-      : priority === "low"
-        ? "border-foreground/10 text-muted-foreground"
-        : "border-cyan-500/20 text-cyan-700 dark:text-cyan-300"
-
-  return (
-    <span className={`rounded-full border px-2 py-1 text-[0.68rem] font-medium uppercase tracking-[0.18em] ${tone}`}>
-      {priority}
-    </span>
-  )
-}
-
-function formatDate(value: Date) {
-  return new Intl.DateTimeFormat("en", {
-    day: "numeric",
-    month: "short",
-  }).format(value)
-}
-
-function formatSalary(min: number | null, max: number | null) {
-  if (min && max) {
-    return `$${min.toLocaleString()} - $${max.toLocaleString()}`
-  }
-
-  if (min) {
-    return `From $${min.toLocaleString()}`
-  }
-
-  if (max) {
-    return `Up to $${max.toLocaleString()}`
-  }
-
-  return ""
-}
-
-function formatShortRelative(value: Date) {
-  const diffHours = Math.round((value.getTime() - Date.now()) / (1000 * 60 * 60))
-  const formatter = new Intl.RelativeTimeFormat("en", { numeric: "auto" })
-
-  if (Math.abs(diffHours) < 24) {
-    return formatter.format(diffHours, "hour")
-  }
-
-  return formatter.format(Math.round(diffHours / 24), "day")
 }
 
 function capitalize(value: string) {
