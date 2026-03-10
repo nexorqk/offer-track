@@ -1,11 +1,24 @@
-import { RoutePlaceholder } from "@/components/layout/route-placeholder"
+import { requireCurrentUser } from "@/features/auth/server/auth"
+import { TasksPageContent } from "@/features/tasks/components/tasks-page-content"
+import { parseTaskListFilters } from "@/features/tasks/schemas/task-list"
+import {
+  buildTasksPageData,
+  listTasksForUser,
+} from "@/features/tasks/server/queries"
 
-export default function TasksPage() {
+type TasksPageProps = {
+  searchParams: Promise<Record<string, string | string[] | undefined>>
+}
+
+export default async function TasksPage({ searchParams }: TasksPageProps) {
+  const [user, params] = await Promise.all([requireCurrentUser(), searchParams])
+  const filters = parseTaskListFilters(params)
+  const tasks = await listTasksForUser(user.id)
+
   return (
-    <RoutePlaceholder
-      eyebrow="Execution"
-      title="Tasks"
-      description="This route is ready for reminders, follow-ups, deadlines, and interview prep checklists."
+    <TasksPageContent
+      filter={filters.status}
+      {...buildTasksPageData(tasks, filters.status)}
     />
   )
 }
