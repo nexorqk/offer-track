@@ -1,6 +1,6 @@
 "use client"
 
-import { startTransition, useActionState } from "react"
+import { useActionState } from "react"
 import * as React from "react"
 import { useForm, type FieldErrors, type UseFormRegisterReturn } from "react-hook-form"
 
@@ -51,6 +51,7 @@ export function JobForm({
     initialJobFormState,
   )
   const {
+    clearErrors,
     formState,
     getValues,
     handleSubmit,
@@ -60,6 +61,7 @@ export function JobForm({
   } = useForm<JobFormValues>({
     defaultValues: initialValues,
   })
+  const allowNativeSubmitRef = React.useRef(false)
 
   React.useEffect(() => {
     reset(initialValues)
@@ -69,6 +71,8 @@ export function JobForm({
     if (!state.fieldErrors) {
       return
     }
+
+    clearErrors()
 
     for (const [fieldName, messages] of Object.entries(state.fieldErrors)) {
       const message = messages?.[0]
@@ -82,22 +86,41 @@ export function JobForm({
         type: "server",
       })
     }
-  }, [setError, state.fieldErrors])
+  }, [clearErrors, setError, state.fieldErrors])
 
-  const submitForm = handleSubmit((_, event) => {
-    const form = event?.currentTarget
+  const validateBeforeSubmit = handleSubmit(
+    () => {
+      allowNativeSubmitRef.current = true
+    },
+    () => {
+      allowNativeSubmitRef.current = false
+    },
+  )
 
-    if (!(form instanceof HTMLFormElement)) {
+  const submitForm = (event: React.FormEvent<HTMLFormElement>) => {
+    if (allowNativeSubmitRef.current) {
+      allowNativeSubmitRef.current = false
       return
     }
 
-    startTransition(() => {
-      formAction(new FormData(form))
+    const form = event.currentTarget
+
+    void validateBeforeSubmit(event).then(() => {
+      if (!allowNativeSubmitRef.current) {
+        return
+      }
+
+      form.requestSubmit()
     })
-  })
+  }
+
+  const errorSummary = getErrorSummary(formState.errors)
+  const showClientErrorSummary =
+    formState.submitCount > 0 && errorSummary.length > 0
+  const showErrorSummary = Boolean(state.message) || showClientErrorSummary
 
   return (
-    <form onSubmit={submitForm} className="grid gap-5">
+    <form action={formAction} noValidate onSubmit={submitForm} className="grid gap-5">
       {jobId ? <input type="hidden" name="jobId" value={jobId} /> : null}
 
       <div className="flex flex-col gap-2">
@@ -111,7 +134,7 @@ export function JobForm({
       <section className="grid gap-4 rounded-[1.75rem] border bg-background/80 p-4">
         <div className="grid gap-4 md:grid-cols-[1.3fr_0.9fr]">
           <Field
-            error={getFieldError(formState.errors, state, "title")}
+            error={getFieldError(formState.errors, "title")}
             label="Role title"
             name="title"
             placeholder="Senior Frontend Engineer"
@@ -128,7 +151,7 @@ export function JobForm({
               list="job-company-options"
               placeholder="Atlas Labs"
               aria-invalid={
-                getFieldError(formState.errors, state, "companyName") ? "true" : "false"
+                getFieldError(formState.errors, "companyName") ? "true" : "false"
               }
               {...register("companyName", {
                 required: "Company name is required",
@@ -139,13 +162,13 @@ export function JobForm({
                 <option key={companyName} value={companyName} />
               ))}
             </datalist>
-            <FieldError error={getFieldError(formState.errors, state, "companyName")} />
+            <FieldError error={getFieldError(formState.errors, "companyName")} />
           </div>
         </div>
 
         <div className="grid gap-4 md:grid-cols-3">
           <SelectField
-            error={getFieldError(formState.errors, state, "status")}
+            error={getFieldError(formState.errors, "status")}
             label="Status"
             name="status"
             options={jobStatusOptions.map((value) => ({
@@ -155,7 +178,7 @@ export function JobForm({
             registration={register("status")}
           />
           <SelectField
-            error={getFieldError(formState.errors, state, "priority")}
+            error={getFieldError(formState.errors, "priority")}
             label="Priority"
             name="priority"
             options={jobPriorityOptions.map((value) => ({
@@ -165,7 +188,7 @@ export function JobForm({
             registration={register("priority")}
           />
           <SelectField
-            error={getFieldError(formState.errors, state, "workMode")}
+            error={getFieldError(formState.errors, "workMode")}
             label="Work mode"
             name="workMode"
             options={[
@@ -183,28 +206,28 @@ export function JobForm({
       <section className="grid gap-4 rounded-[1.75rem] border bg-background/80 p-4">
         <div className="grid gap-4 md:grid-cols-2">
           <Field
-            error={getFieldError(formState.errors, state, "location")}
+            error={getFieldError(formState.errors, "location")}
             label="Location"
             name="location"
             placeholder="Remote, EU"
             registration={register("location")}
           />
           <Field
-            error={getFieldError(formState.errors, state, "employmentType")}
+            error={getFieldError(formState.errors, "employmentType")}
             label="Employment type"
             name="employmentType"
             placeholder="full-time"
             registration={register("employmentType")}
           />
           <Field
-            error={getFieldError(formState.errors, state, "source")}
+            error={getFieldError(formState.errors, "source")}
             label="Source"
             name="source"
             placeholder="LinkedIn"
             registration={register("source")}
           />
           <Field
-            error={getFieldError(formState.errors, state, "sourceUrl")}
+            error={getFieldError(formState.errors, "sourceUrl")}
             label="Source URL"
             name="sourceUrl"
             placeholder="https://..."
@@ -214,14 +237,14 @@ export function JobForm({
             })}
           />
           <Field
-            error={getFieldError(formState.errors, state, "appliedAt")}
+            error={getFieldError(formState.errors, "appliedAt")}
             label="Applied at"
             name="appliedAt"
             type="date"
             registration={register("appliedAt")}
           />
           <Field
-            error={getFieldError(formState.errors, state, "currency")}
+            error={getFieldError(formState.errors, "currency")}
             label="Currency"
             name="currency"
             placeholder="USD"
@@ -231,7 +254,7 @@ export function JobForm({
 
         <div className="grid gap-4 md:grid-cols-2">
           <Field
-            error={getFieldError(formState.errors, state, "salaryMin")}
+            error={getFieldError(formState.errors, "salaryMin")}
             label="Salary min"
             name="salaryMin"
             placeholder="4500"
@@ -242,7 +265,7 @@ export function JobForm({
             })}
           />
           <Field
-            error={getFieldError(formState.errors, state, "salaryMax")}
+            error={getFieldError(formState.errors, "salaryMax")}
             label="Salary max"
             name="salaryMax"
             placeholder="5500"
@@ -275,13 +298,24 @@ export function JobForm({
             placeholder="Role scope, prep notes, and anything worth remembering."
             {...register("description")}
           />
-          <FieldError error={getFieldError(formState.errors, state, "description")} />
+          <FieldError error={getFieldError(formState.errors, "description")} />
         </div>
       </section>
 
-      {state.status === "error" && state.message ? (
-        <div className="rounded-xl border border-destructive/20 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-          {state.message}
+      {showErrorSummary ? (
+        <div
+          aria-label="Form validation errors"
+          role="alert"
+          className="rounded-xl border border-destructive/20 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+        >
+          <p>{state.message ?? "Fix the highlighted fields and try again."}</p>
+          {errorSummary.length > 0 ? (
+            <ul className="mt-2 list-disc pl-5">
+              {errorSummary.map((error) => (
+                <li key={error.fieldName}>{error.message}</li>
+              ))}
+            </ul>
+          ) : null}
         </div>
       ) : null}
 
@@ -381,7 +415,6 @@ function FieldError({
 
 function getFieldError(
   clientErrors: FieldErrors<JobFormValues>,
-  state: JobFormState,
   fieldName: JobFormFieldName,
 ) {
   const clientError = clientErrors[fieldName]?.message
@@ -389,8 +422,23 @@ function getFieldError(
   if (typeof clientError === "string" && clientError.length > 0) {
     return clientError
   }
+}
 
-  return state.fieldErrors?.[fieldName]?.[0]
+function getErrorSummary(clientErrors: FieldErrors<JobFormValues>) {
+  return Object.entries(clientErrors).flatMap(([fieldName, error]) => {
+    const message = error?.message
+
+    if (typeof message !== "string" || message.length === 0) {
+      return []
+    }
+
+    return [
+      {
+        fieldName,
+        message,
+      },
+    ]
+  })
 }
 
 function isWholeNumber(value: string) {

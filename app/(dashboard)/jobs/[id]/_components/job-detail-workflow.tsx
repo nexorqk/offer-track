@@ -2,32 +2,42 @@
 
 import * as React from "react"
 import { useActionState } from "react"
-import { CalendarPlus2, NotebookText, UserRoundPlus } from "lucide-react"
+import {
+  CalendarClock,
+  CalendarPlus2,
+  NotebookText,
+  UserRoundPlus,
+} from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
   createJobContactAction,
+  createJobInterviewAction,
   createJobNoteAction,
   createJobTaskAction,
 } from "@/features/jobs/server/actions"
 import {
   initialJobContactState,
+  initialJobInterviewState,
   initialJobNoteState,
   initialJobTaskState,
   type JobContactListItem,
   type JobDetailMutationState,
+  type JobInterviewListItem,
   type JobNoteListItem,
   type JobTaskListItem,
 } from "@/features/jobs/types/job-detail"
 
 export function JobDetailWorkflow({
   contacts,
+  interviews,
   jobId,
   notes,
   tasks,
 }: Readonly<{
   contacts: JobContactListItem[]
+  interviews: JobInterviewListItem[]
   jobId: string
   notes: JobNoteListItem[]
   tasks: JobTaskListItem[]
@@ -35,6 +45,7 @@ export function JobDetailWorkflow({
   return (
     <div className="grid gap-5">
       <ContactPanel contacts={contacts} jobId={jobId} />
+      <InterviewPanel interviews={interviews} jobId={jobId} />
       <TaskPanel jobId={jobId} tasks={tasks} />
       <NotePanel jobId={jobId} notes={notes} />
     </div>
@@ -136,6 +147,144 @@ function ContactPanel({
               </div>
               {contact.notes ? (
                 <p className="mt-3 text-sm text-muted-foreground">{contact.notes}</p>
+              ) : null}
+            </div>
+          ))
+        )}
+      </div>
+    </WorkflowCard>
+  )
+}
+
+function InterviewPanel({
+  interviews,
+  jobId,
+}: Readonly<{
+  interviews: JobInterviewListItem[]
+  jobId: string
+}>) {
+  const [state, action, isPending] = useActionState(
+    createJobInterviewAction,
+    initialJobInterviewState,
+  )
+  const [timezoneOffsetMinutes, setTimezoneOffsetMinutes] = React.useState(0)
+
+  React.useEffect(() => {
+    setTimezoneOffsetMinutes(new Date().getTimezoneOffset())
+  }, [])
+
+  return (
+    <WorkflowCard
+      description="Keep every screen, panel, and final loop tied directly to the role."
+      icon={CalendarClock}
+      title="Interviews"
+    >
+      <WorkflowForm
+        action={action}
+        isPending={isPending}
+        jobId={jobId}
+        resetOnSuccess={state.status === "success"}
+      >
+        <input
+          type="hidden"
+          name="timezoneOffsetMinutes"
+          value={String(timezoneOffsetMinutes)}
+        />
+
+        <div className="grid gap-3 md:grid-cols-[12rem_minmax(0,1fr)_10rem]">
+          <SelectField
+            error={getFieldError(state, "type")}
+            label="Type"
+            name="type"
+            options={[
+              { label: "HR", value: "hr" },
+              { label: "Technical", value: "technical" },
+              { label: "Final", value: "final" },
+            ]}
+          />
+          <Field
+            error={getFieldError(state, "scheduledAt")}
+            label="Scheduled for"
+            name="scheduledAt"
+            type="datetime-local"
+          />
+          <Field
+            error={getFieldError(state, "durationMinutes")}
+            label="Duration"
+            name="durationMinutes"
+            placeholder="45"
+            type="number"
+          />
+        </div>
+
+        <div className="grid gap-3 md:grid-cols-2">
+          <Field
+            error={getFieldError(state, "location")}
+            label="Location"
+            name="location"
+            placeholder="Zoom / onsite / phone"
+          />
+          <Field
+            error={getFieldError(state, "result")}
+            label="Result"
+            name="result"
+            placeholder="Advanced to onsite"
+          />
+        </div>
+
+        <div className="grid gap-2">
+          <label htmlFor="interview-notes" className="text-sm font-medium">
+            Notes
+          </label>
+          <textarea
+            id="interview-notes"
+            name="notes"
+            className={textareaClassName}
+            placeholder="Prep themes, panel names, takeaways, and follow-up context."
+          />
+          <FieldError error={getFieldError(state, "notes")} />
+        </div>
+
+        <FormStateMessage state={state} />
+
+        <Button type="submit" disabled={isPending}>
+          {isPending ? "Saving..." : "Add interview"}
+        </Button>
+      </WorkflowForm>
+
+      <div className="grid gap-3">
+        {interviews.length === 0 ? (
+          <EmptyState>No interviews scheduled for this role yet.</EmptyState>
+        ) : (
+          interviews.map((interview) => (
+            <div key={interview.id} className="rounded-[1.25rem] border bg-muted/15 p-4">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div className="flex flex-col gap-1">
+                  <strong className="text-sm font-semibold">
+                    {formatInterviewType(interview.type)} interview
+                  </strong>
+                  <span className="text-sm text-muted-foreground">
+                    {formatDateTime(interview.scheduledAt)}
+                  </span>
+                </div>
+                {interview.result ? (
+                  <span className="rounded-full border px-2 py-1 text-[0.68rem] font-medium uppercase tracking-[0.16em] text-muted-foreground">
+                    {interview.result}
+                  </span>
+                ) : null}
+              </div>
+
+              <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
+                {interview.durationMinutes ? (
+                  <span>{interview.durationMinutes} min</span>
+                ) : null}
+                {interview.location ? <span>{interview.location}</span> : null}
+              </div>
+
+              {interview.notes ? (
+                <p className="mt-3 text-sm text-muted-foreground">
+                  {interview.notes}
+                </p>
               ) : null}
             </div>
           ))
@@ -384,6 +533,42 @@ function Field({
   )
 }
 
+function SelectField({
+  error,
+  label,
+  name,
+  options,
+}: Readonly<{
+  error?: string
+  label: string
+  name: string
+  options: Array<{ label: string; value: string }>
+}>) {
+  const describedBy = error ? `${name}-error` : undefined
+
+  return (
+    <div className="grid gap-2">
+      <label htmlFor={name} className="text-sm font-medium">
+        {label}
+      </label>
+      <select
+        id={name}
+        name={name}
+        className={selectClassName}
+        aria-invalid={error ? "true" : "false"}
+        aria-describedby={describedBy}
+      >
+        {options.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+      <FieldError error={error} id={describedBy} />
+    </div>
+  )
+}
+
 function FieldError({
   error,
   id,
@@ -450,6 +635,20 @@ function formatDateTime(value: Date) {
     month: "short",
   }).format(value)
 }
+
+function formatInterviewType(value: "final" | "hr" | "technical") {
+  switch (value) {
+    case "hr":
+      return "HR"
+    case "technical":
+      return "Technical"
+    case "final":
+      return "Final"
+  }
+}
+
+const selectClassName =
+  "flex h-11 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm shadow-xs transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
 
 const textareaClassName =
   "flex min-h-28 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm shadow-xs transition-colors outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"

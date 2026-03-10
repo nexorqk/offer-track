@@ -7,6 +7,7 @@ import { z, type ZodError } from "zod"
 
 import { requireCurrentUser } from "@/features/auth/server/auth"
 import { contactFormSchema } from "@/features/contacts/schemas/contact"
+import { interviewFormSchema } from "@/features/interviews/schemas/interview"
 import { jobNoteFormSchema } from "@/features/jobs/schemas/job-note"
 import {
   jobFormSchema,
@@ -21,6 +22,7 @@ import type { JobFormState } from "@/features/jobs/types/job"
 import type {
   JobDetailMutationState,
   JobContactFieldName,
+  JobInterviewFieldName,
   JobNoteFieldName,
   JobTaskFieldName,
 } from "@/features/jobs/types/job-detail"
@@ -29,6 +31,7 @@ import { db } from "@/lib/db"
 import {
   companies,
   contacts,
+  interviews,
   jobStageHistory,
   jobs,
   notes,
@@ -304,6 +307,66 @@ export async function createJobTaskAction(
 
   return {
     message: "Follow-up task created.",
+    status: "success",
+  }
+}
+
+export async function createJobInterviewAction(
+  _previousState: JobDetailMutationState<JobInterviewFieldName>,
+  formData: FormData,
+): Promise<JobDetailMutationState<JobInterviewFieldName>> {
+  const user = await requireCurrentUser()
+  const jobId = getString(formData, "jobId")
+
+  if (!jobId) {
+    return {
+      message: "Job identifier is missing.",
+      status: "error",
+    }
+  }
+
+  const parsed = interviewFormSchema.safeParse({
+    durationMinutes: getString(formData, "durationMinutes"),
+    location: getString(formData, "location"),
+    notes: getString(formData, "notes"),
+    result: getString(formData, "result"),
+    scheduledAt: getString(formData, "scheduledAt"),
+    timezoneOffsetMinutes: getString(formData, "timezoneOffsetMinutes"),
+    type: getString(formData, "type"),
+  })
+
+  if (!parsed.success) {
+    return {
+      fieldErrors: parsed.error.flatten().fieldErrors,
+      message: "Fix the highlighted fields and try again.",
+      status: "error",
+    }
+  }
+
+  const job = await getOwnedJob(user.id, jobId)
+
+  if (!job) {
+    return {
+      message: "This job no longer exists.",
+      status: "error",
+    }
+  }
+
+  await db.insert(interviews).values({
+    durationMinutes: parsed.data.durationMinutes,
+    jobId,
+    location: parsed.data.location,
+    notes: parsed.data.notes,
+    result: parsed.data.result,
+    scheduledAt: parsed.data.scheduledAt,
+    type: parsed.data.type,
+  })
+
+  revalidatePath("/dashboard")
+  revalidatePath(`/jobs/${jobId}`)
+
+  return {
+    message: "Interview scheduled.",
     status: "success",
   }
 }

@@ -15,6 +15,14 @@ export type JobTaskFieldName = "dueDate" | "title"
 
 export type JobNoteFieldName = "content"
 
+export type JobInterviewFieldName =
+  | "durationMinutes"
+  | "location"
+  | "notes"
+  | "result"
+  | "scheduledAt"
+  | "type"
+
 export type JobContactListItem = {
   createdAt: Date
   email: string | null
@@ -40,7 +48,23 @@ export type JobNoteListItem = {
   updatedAt: Date
 }
 
+export type JobInterviewListItem = {
+  createdAt: Date
+  durationMinutes: number | null
+  id: string
+  location: string | null
+  notes: string | null
+  result: string | null
+  scheduledAt: Date
+  type: "final" | "hr" | "technical"
+  updatedAt: Date
+}
+
 export const initialJobContactState: JobDetailMutationState<JobContactFieldName> = {
+  status: "idle",
+}
+
+export const initialJobInterviewState: JobDetailMutationState<JobInterviewFieldName> = {
   status: "idle",
 }
 

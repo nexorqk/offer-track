@@ -7,6 +7,7 @@ import { db } from "@/lib/db"
 import {
   companies,
   contacts,
+  interviews,
   jobStageHistory,
   jobs,
   notes,
@@ -14,6 +15,7 @@ import {
 } from "@/lib/db/schema"
 import type {
   JobContactListItem,
+  JobInterviewListItem,
   JobNoteListItem,
   JobTaskListItem,
 } from "@/features/jobs/types/job-detail"
@@ -123,7 +125,13 @@ export async function getJobDetailForUser(userId: string, jobId: string) {
     return null
   }
 
-  const [history, linkedContacts, linkedTasks, linkedNotes] = await Promise.all([
+  const [
+    history,
+    linkedContacts,
+    linkedInterviews,
+    linkedTasks,
+    linkedNotes,
+  ] = await Promise.all([
     db
       .select({
         changedAt: jobStageHistory.changedAt,
@@ -147,6 +155,22 @@ export async function getJobDetailForUser(userId: string, jobId: string) {
       .from(contacts)
       .where(and(eq(contacts.userId, userId), eq(contacts.jobId, jobId)))
       .orderBy(desc(contacts.updatedAt)),
+    db
+      .select({
+        createdAt: interviews.createdAt,
+        durationMinutes: interviews.durationMinutes,
+        id: interviews.id,
+        location: interviews.location,
+        notes: interviews.notes,
+        result: interviews.result,
+        scheduledAt: interviews.scheduledAt,
+        type: interviews.type,
+        updatedAt: interviews.updatedAt,
+      })
+      .from(interviews)
+      .innerJoin(jobs, eq(interviews.jobId, jobs.id))
+      .where(and(eq(jobs.userId, userId), eq(interviews.jobId, jobId)))
+      .orderBy(desc(interviews.scheduledAt), desc(interviews.createdAt)),
     db
       .select({
         completed: tasks.completed,
@@ -192,6 +216,7 @@ export async function getJobDetailForUser(userId: string, jobId: string) {
       }),
     },
     history,
+    interviews: linkedInterviews satisfies JobInterviewListItem[],
     meta: {
       companyId: job.companyId,
       createdAt: job.createdAt,

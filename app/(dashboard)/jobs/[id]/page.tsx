@@ -50,6 +50,7 @@ export default async function JobDetailPage({ params }: JobDetailPageProps) {
 
         <JobDetailWorkflow
           contacts={job.contacts}
+          interviews={job.interviews}
           jobId={job.formValues.id}
           notes={job.notes}
           tasks={job.tasks}
