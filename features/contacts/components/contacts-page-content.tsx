@@ -1,23 +1,23 @@
 import Link from "next/link"
 import {
   ArrowUpRight,
-  BriefcaseBusiness,
   Building2,
-  CircleDotDashed,
-  Layers2,
+  Mail,
   type LucideIcon,
-  Orbit,
+  MessagesSquare,
+  Network,
+  Users,
 } from "lucide-react"
 
 import { buttonVariants } from "@/components/ui/button-variants"
-import type { CompaniesPageData } from "@/features/companies/server/queries"
+import type { ContactsPageData } from "@/features/contacts/server/queries"
 
-type CompaniesPageContentProps = CompaniesPageData
+type ContactsPageContentProps = ContactsPageData
 
-export function CompaniesPageContent({
+export function ContactsPageContent({
   items,
   summary,
-}: Readonly<CompaniesPageContentProps>) {
+}: Readonly<ContactsPageContentProps>) {
   return (
     <div className="flex flex-col gap-5 pb-8">
       <section>
@@ -25,23 +25,23 @@ export function CompaniesPageContent({
           <div className="flex flex-col gap-6">
             <div className="flex flex-col gap-2">
               <span className="text-[0.68rem] font-medium uppercase tracking-[0.28em] text-muted-foreground">
-                Company map
+                Relationship map
               </span>
               <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
                 <div className="flex flex-col gap-2">
                   <h1 className="text-3xl font-semibold tracking-tight">
-                    See where each company sits before you dive back into the jobs.
+                    Keep recruiters, hiring managers, and interviewers connected to the work.
                   </h1>
                   <p className="max-w-2xl text-sm leading-6 text-muted-foreground">
-                    Track how many roles are open at each company, spot the average pipeline
-                    stage, and jump directly into the filtered jobs view when it is time to act.
+                    Scan every active relationship, jump into the linked company, and reopen the
+                    exact job thread when the next reply needs context.
                   </p>
                 </div>
                 <Link
                   href="/jobs?view=kanban"
                   className={buttonVariants({ size: "sm", variant: "outline" })}
                 >
-                  <BriefcaseBusiness data-icon="inline-start" />
+                  <MessagesSquare data-icon="inline-start" />
                   Back to jobs
                 </Link>
               </div>
@@ -49,22 +49,22 @@ export function CompaniesPageContent({
 
             <div className="grid gap-3 sm:grid-cols-3">
               <SummaryCard
+                icon={Users}
+                label="Contacts"
+                note="People currently tracked"
+                value={String(summary.totalContacts)}
+              />
+              <SummaryCard
                 icon={Building2}
                 label="Companies"
-                note="Tracked relationships in one place"
+                note="Organizations with known relationships"
                 value={String(summary.companies)}
               />
               <SummaryCard
-                icon={Layers2}
-                label="Total roles"
-                note="Every role linked to a company"
-                value={String(summary.totalJobs)}
-              />
-              <SummaryCard
-                icon={Orbit}
-                label="Open roles"
-                note="Wishlist through final interview"
-                value={String(summary.activeJobs)}
+                icon={Network}
+                label="Linked jobs"
+                note="Contacts tied to a specific role"
+                value={String(summary.linkedJobs)}
               />
             </div>
           </div>
@@ -75,14 +75,14 @@ export function CompaniesPageContent({
         <div className="border-b px-5 py-4">
           <div className="flex flex-col gap-2">
             <span className="text-[0.68rem] font-medium uppercase tracking-[0.28em] text-muted-foreground">
-              Company list
+              Contact list
             </span>
             <div className="flex flex-col gap-1">
-              <h2 className="text-2xl font-semibold tracking-tight">All tracked companies</h2>
+              <h2 className="text-2xl font-semibold tracking-tight">All tracked contacts</h2>
               <p className="text-sm text-muted-foreground">
-                {summary.companies === 0
-                  ? "Companies will appear here as soon as saved jobs start linking them."
-                  : `${summary.companies} companies connected to ${summary.totalJobs} tracked roles.`}
+                {summary.totalContacts === 0
+                  ? "Contacts will appear here as soon as you add people from a job detail page."
+                  : `${summary.totalContacts} contacts across ${summary.companies} companies.`}
               </p>
             </div>
           </div>
@@ -91,70 +91,78 @@ export function CompaniesPageContent({
         <div className="grid gap-4 p-4">
           {items.length === 0 ? (
             <div className="rounded-[1.75rem] border border-dashed bg-muted/20 px-6 py-8 text-sm text-muted-foreground">
-              No companies tracked yet. The first saved job will start building this list.
+              No contacts tracked yet. Add recruiters or hiring managers from a job detail page.
             </div>
           ) : (
-            items.map((company) => (
+            items.map((contact) => (
               <article
-                key={company.id}
-                id={`company-${company.id}`}
+                key={contact.id}
                 className="rounded-[1.75rem] border bg-[linear-gradient(180deg,color-mix(in_oklch,var(--color-background)_96%,transparent),color-mix(in_oklch,var(--color-muted)_16%,transparent))] p-5 shadow-[0_1px_0_color-mix(in_oklch,var(--color-foreground)_5%,transparent)]"
               >
-                <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
-                  <div className="min-w-0 flex-1 space-y-4">
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                  <div className="min-w-0 flex-1 space-y-3">
                     <div className="space-y-1">
-                      <h3 className="text-lg font-semibold tracking-tight">{company.name}</h3>
+                      <h3 className="text-lg font-semibold tracking-tight">{contact.name}</h3>
                       <p className="text-sm text-muted-foreground">
-                        {[company.location, company.industry].filter(Boolean).join(" · ") ||
-                          "Company details will appear here as they are added."}
+                        {contact.role ?? "Role not specified"}
                       </p>
                     </div>
 
                     <div className="flex flex-wrap gap-2">
-                      <Pill>{formatRoleCount(company.jobCount)}</Pill>
-                      <Pill>{formatOpenRoleCount(company.openJobCount)}</Pill>
                       <Pill>
-                        {company.averageStageLabel
-                          ? `Average stage: ${company.averageStageLabel}`
-                          : "Average stage: No jobs yet"}
+                        <Link
+                          href={`/companies#company-${contact.companyId}`}
+                          className="underline-offset-4 hover:text-foreground hover:underline"
+                        >
+                          {contact.companyName}
+                        </Link>
                       </Pill>
+                      {contact.jobId && contact.jobTitle ? (
+                        <Pill>
+                          <Link
+                            href={`/jobs/${contact.jobId}`}
+                            className="underline-offset-4 hover:text-foreground hover:underline"
+                          >
+                            {contact.jobTitle}
+                          </Link>
+                        </Pill>
+                      ) : (
+                        <Pill>Company-level relationship</Pill>
+                      )}
                     </div>
 
-                    {company.stageBreakdown.length > 0 ? (
-                      <div className="flex flex-wrap gap-2">
-                        {company.stageBreakdown.map((stage) => (
-                          <span
-                            key={`${company.id}-${stage.status}`}
-                            className="rounded-full border bg-background px-3 py-1 text-xs font-medium text-muted-foreground"
+                    <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm text-muted-foreground">
+                      {contact.email ? (
+                        <span className="inline-flex items-center gap-2">
+                          <Mail className="size-4" />
+                          <a
+                            href={`mailto:${contact.email}`}
+                            className="underline-offset-4 hover:text-foreground hover:underline"
                           >
-                            {stage.label} · {stage.count}
-                          </span>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="inline-flex items-center gap-2 rounded-full border border-dashed bg-background px-3 py-1 text-xs font-medium text-muted-foreground">
-                        <CircleDotDashed className="size-3.5" />
-                        No linked roles yet
-                      </div>
-                    )}
+                            {contact.email}
+                          </a>
+                        </span>
+                      ) : null}
+                      {contact.linkedinUrl ? (
+                        <a
+                          href={contact.linkedinUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center gap-2 underline-offset-4 hover:text-foreground hover:underline"
+                        >
+                          <ArrowUpRight className="size-4" />
+                          LinkedIn
+                        </a>
+                      ) : null}
+                    </div>
+
+                    {contact.notes ? (
+                      <p className="text-sm text-muted-foreground">{contact.notes}</p>
+                    ) : null}
                   </div>
 
-                  <div className="flex flex-col items-start gap-3 lg:items-end">
-                    <Link
-                      href={buildCompanyJobsHref(company.name)}
-                      className={buttonVariants({ size: "sm", variant: "outline" })}
-                    >
-                      <ArrowUpRight data-icon="inline-start" />
-                      View jobs
-                    </Link>
-                    {company.website ? (
-                      <Link
-                        href={company.website}
-                        className="text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
-                      >
-                        {company.website.replace(/^https?:\/\//, "")}
-                      </Link>
-                    ) : null}
+                  <div className="text-sm text-muted-foreground">
+                    Updated {formatShortDate(contact.updatedAt)}
                   </div>
                 </div>
               </article>
@@ -201,14 +209,9 @@ function Pill({ children }: Readonly<{ children: React.ReactNode }>) {
   )
 }
 
-function buildCompanyJobsHref(companyName: string) {
-  return `/jobs?q=${encodeURIComponent(companyName)}`
-}
-
-function formatRoleCount(value: number) {
-  return value === 1 ? "1 role" : `${value} roles`
-}
-
-function formatOpenRoleCount(value: number) {
-  return value === 1 ? "1 open role" : `${value} open roles`
+function formatShortDate(value: Date) {
+  return new Intl.DateTimeFormat("en", {
+    day: "numeric",
+    month: "short",
+  }).format(value)
 }

@@ -1,11 +1,10 @@
-import { RoutePlaceholder } from "@/components/layout/route-placeholder"
+import { requireCurrentUser } from "@/features/auth/server/auth"
+import { ContactsPageContent } from "@/features/contacts/components/contacts-page-content"
+import { listContactsForUser } from "@/features/contacts/server/queries"
 
-export default function ContactsPage() {
-  return (
-    <RoutePlaceholder
-      eyebrow="CRM"
-      title="Contacts"
-      description="Use this route for recruiters, hiring managers, interviewers, and communication history."
-    />
-  )
+export default async function ContactsPage() {
+  const user = await requireCurrentUser()
+  const contacts = await listContactsForUser(user.id)
+
+  return <ContactsPageContent {...contacts} />
 }
