@@ -12,6 +12,7 @@ const RESPONSE_STATUSES = new Set([
   "offer",
   "rejected",
 ])
+const INTERVIEW_STATUSES = new Set(["hr_screen", "technical", "final"])
 export const FUNNEL_STATUSES = [
   "wishlist",
   "applied",
@@ -45,7 +46,9 @@ export type AnalyticsOverview = {
   }>
   summary: {
     activeApplications: number
+    interviewRate: number
     offerRate: number
+    rejectionCount: number
     responseRate: number
     totalJobs: number
   }
@@ -59,7 +62,13 @@ export function buildAnalyticsOverview(
   const appliedJobs = jobRows.filter((job) => job.status !== "wishlist")
   const responseRateBase = appliedJobs.length
   const respondedJobs = appliedJobs.filter((job) => RESPONSE_STATUSES.has(job.status))
+  const interviewedJobs = new Set(
+    stageRows
+      .filter((row) => INTERVIEW_STATUSES.has(row.toStatus))
+      .map((row) => row.jobId),
+  )
   const offers = jobRows.filter((job) => job.status === "offer").length
+  const rejectionCount = jobRows.filter((job) => job.status === "rejected").length
 
   const jobsReachedByStatus = new Map<
     (typeof FUNNEL_STATUSES)[number],
@@ -109,8 +118,13 @@ export function buildAnalyticsOverview(
     summary: {
       activeApplications: jobRows.filter((job) => ACTIVE_STATUSES.has(job.status))
         .length,
+      interviewRate:
+        responseRateBase === 0
+          ? 0
+          : Math.round((interviewedJobs.size / responseRateBase) * 100),
       offerRate:
         responseRateBase === 0 ? 0 : Math.round((offers / responseRateBase) * 100),
+      rejectionCount,
       responseRate:
         responseRateBase === 0
           ? 0

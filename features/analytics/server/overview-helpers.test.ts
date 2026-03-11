@@ -26,7 +26,9 @@ describe("buildAnalyticsOverview", () => {
 
     expect(analytics.summary).toMatchObject({
       activeApplications: 1,
+      interviewRate: 67,
       offerRate: 33,
+      rejectionCount: 1,
       responseRate: 67,
       totalJobs: 3,
     })
@@ -62,5 +64,13 @@ describe("buildAnalyticsOverview", () => {
       { count: 2, source: "Unknown" },
       { count: 1, source: "Referral" },
     ])
+    expect(analytics.summary).toMatchObject({
+      activeApplications: 3,
+      interviewRate: 0,
+      offerRate: 0,
+      rejectionCount: 0,
+      responseRate: 0,
+      totalJobs: 3,
+    })
   })
 })

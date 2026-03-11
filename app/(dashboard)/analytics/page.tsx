@@ -1,4 +1,4 @@
-import { ArrowRightLeft, BarChart3, BriefcaseBusiness, Radar } from "lucide-react"
+import { ArrowRightLeft, BriefcaseBusiness, Radar, ShieldX } from "lucide-react"
 
 import { requireCurrentUser } from "@/features/auth/server/auth"
 import { getAnalyticsOverview } from "@/features/analytics/server/overview"
@@ -20,7 +20,7 @@ export default async function AnalyticsPage() {
                 Funnel analytics built on your real pipeline.
               </h1>
               <p className="max-w-3xl text-sm leading-6 text-muted-foreground">
-                Track stage conversion, response rate, and source mix without leaving the app.
+                Track stage conversion, response rate, interview rate, and source mix without leaving the app.
               </p>
             </div>
           </div>
@@ -34,9 +34,9 @@ export default async function AnalyticsPage() {
             />
             <StatCard
               icon={Radar}
-              label="Active pipeline"
-              note="Wishlist through final stage"
-              value={String(analytics.summary.activeApplications)}
+              label="Interview rate"
+              note="Applied jobs that reached an interview stage"
+              value={`${analytics.summary.interviewRate}%`}
             />
             <StatCard
               icon={ArrowRightLeft}
@@ -45,10 +45,10 @@ export default async function AnalyticsPage() {
               value={`${analytics.summary.responseRate}%`}
             />
             <StatCard
-              icon={BarChart3}
-              label="Offer rate"
-              note="Offers as a share of applied jobs"
-              value={`${analytics.summary.offerRate}%`}
+              icon={ShieldX}
+              label="Rejections"
+              note="Jobs currently closed out as rejected"
+              value={String(analytics.summary.rejectionCount)}
             />
           </div>
         </div>
