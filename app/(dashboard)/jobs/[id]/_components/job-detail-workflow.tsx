@@ -4,14 +4,23 @@ import * as React from "react"
 import { useActionState } from "react"
 import { useRouter } from "next/navigation"
 import {
+  type DefaultValues,
+  useForm,
+  type FieldErrors,
+  type UseFormRegisterReturn,
+} from "react-hook-form"
+import {
   CalendarClock,
   CalendarPlus2,
   NotebookText,
   UserRoundPlus,
 } from "lucide-react"
+import { z } from "zod"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { contactFormSchema } from "@/features/contacts/schemas/contact"
+import { interviewFormSchema } from "@/features/interviews/schemas/interview"
 import {
   createJobContactAction,
   createJobInterviewAction,
@@ -29,6 +38,39 @@ import {
   type JobNoteListItem,
   type JobTaskListItem,
 } from "@/features/jobs/types/job-detail"
+import { taskFormSchema } from "@/features/tasks/schemas/task"
+import {
+  syncServerFieldErrors,
+  useValidatedNativeSubmit,
+  zodFormResolver,
+} from "@/lib/forms/rhf-zod"
+
+type ContactFormValues = z.input<typeof contactFormSchema>
+type InterviewFormValues = z.input<typeof interviewFormSchema>
+type TaskFormValues = z.input<typeof taskFormSchema>
+
+const emptyContactFormValues: ContactFormValues = {
+  email: "",
+  linkedinUrl: "",
+  name: "",
+  notes: "",
+  role: "",
+}
+
+const emptyInterviewFormValues: InterviewFormValues = {
+  durationMinutes: "",
+  location: "",
+  notes: "",
+  result: "",
+  scheduledAt: "",
+  timezoneOffsetMinutes: "0",
+  type: "hr",
+}
+
+const emptyTaskFormValues: TaskFormValues = {
+  dueDate: "",
+  title: "",
+}
 
 export function JobDetailWorkflow({
   contacts,
@@ -60,11 +102,19 @@ function ContactPanel({
   contacts: JobContactListItem[]
   jobId: string
 }>) {
-  const [state, action, isPending] = useActionState(
-    createJobContactAction,
-    initialJobContactState,
-  )
-  useRefreshOnSuccess(state.status)
+  const {
+    formAction,
+    formState,
+    isPending,
+    register,
+    state,
+    submitForm,
+  } = useWorkflowSchemaForm({
+    action: createJobContactAction,
+    defaultValues: emptyContactFormValues,
+    initialState: initialJobContactState,
+    schema: contactFormSchema,
+  })
 
   return (
     <WorkflowCard
@@ -73,36 +123,41 @@ function ContactPanel({
       title="Contacts"
     >
       <WorkflowForm
-        action={action}
+        action={formAction}
         isPending={isPending}
         jobId={jobId}
-        resetOnSuccess={state.status === "success"}
+        noValidate
+        onSubmit={submitForm}
       >
         <div className="grid gap-3 md:grid-cols-2">
           <Field
-            error={getFieldError(state, "name")}
+            error={getClientFieldError(formState.errors, "name")}
             label="Name"
             name="name"
             placeholder="Jane Recruiter"
+            registration={register("name")}
           />
           <Field
-            error={getFieldError(state, "role")}
+            error={getClientFieldError(formState.errors, "role")}
             label="Role"
             name="role"
             placeholder="Senior Recruiter"
+            registration={register("role")}
           />
           <Field
-            error={getFieldError(state, "email")}
+            error={getClientFieldError(formState.errors, "email")}
             label="Email"
             name="email"
             placeholder="jane@company.com"
             type="email"
+            registration={register("email")}
           />
           <Field
-            error={getFieldError(state, "linkedinUrl")}
+            error={getClientFieldError(formState.errors, "linkedinUrl")}
             label="LinkedIn"
             name="linkedinUrl"
             placeholder="https://linkedin.com/in/jane"
+            registration={register("linkedinUrl")}
           />
         </div>
 
@@ -112,11 +167,11 @@ function ContactPanel({
           </label>
           <textarea
             id="contact-notes"
-            name="notes"
             className={textareaClassName}
             placeholder="Warm intro, timezone, preferred follow-up cadence."
+            {...register("notes")}
           />
-          <FieldError error={getFieldError(state, "notes")} />
+          <FieldError error={getClientFieldError(formState.errors, "notes")} />
         </div>
 
         <FormStateMessage state={state} />
@@ -165,16 +220,29 @@ function InterviewPanel({
   interviews: JobInterviewListItem[]
   jobId: string
 }>) {
-  const [state, action, isPending] = useActionState(
-    createJobInterviewAction,
-    initialJobInterviewState,
-  )
-  useRefreshOnSuccess(state.status)
+  const {
+    formAction,
+    formState,
+    isPending,
+    register,
+    setValue,
+    state,
+    submitForm,
+  } = useWorkflowSchemaForm({
+    action: createJobInterviewAction,
+    defaultValues: emptyInterviewFormValues,
+    initialState: initialJobInterviewState,
+    schema: interviewFormSchema,
+  })
   const [timezoneOffsetMinutes, setTimezoneOffsetMinutes] = React.useState(0)
 
   React.useEffect(() => {
     setTimezoneOffsetMinutes(new Date().getTimezoneOffset())
   }, [])
+
+  React.useEffect(() => {
+    setValue("timezoneOffsetMinutes", String(timezoneOffsetMinutes))
+  }, [setValue, timezoneOffsetMinutes])
 
   return (
     <WorkflowCard
@@ -183,20 +251,17 @@ function InterviewPanel({
       title="Interviews"
     >
       <WorkflowForm
-        action={action}
+        action={formAction}
         isPending={isPending}
         jobId={jobId}
-        resetOnSuccess={state.status === "success"}
+        noValidate
+        onSubmit={submitForm}
       >
-        <input
-          type="hidden"
-          name="timezoneOffsetMinutes"
-          value={String(timezoneOffsetMinutes)}
-        />
+        <input type="hidden" {...register("timezoneOffsetMinutes")} />
 
         <div className="grid gap-3 md:grid-cols-[12rem_minmax(0,1fr)_10rem]">
           <SelectField
-            error={getFieldError(state, "type")}
+            error={getClientFieldError(formState.errors, "type")}
             label="Type"
             name="type"
             options={[
@@ -204,34 +269,39 @@ function InterviewPanel({
               { label: "Technical", value: "technical" },
               { label: "Final", value: "final" },
             ]}
+            registration={register("type")}
           />
           <Field
-            error={getFieldError(state, "scheduledAt")}
+            error={getClientFieldError(formState.errors, "scheduledAt")}
             label="Scheduled for"
             name="scheduledAt"
             type="datetime-local"
+            registration={register("scheduledAt")}
           />
           <Field
-            error={getFieldError(state, "durationMinutes")}
+            error={getClientFieldError(formState.errors, "durationMinutes")}
             label="Duration"
             name="durationMinutes"
             placeholder="45"
             type="number"
+            registration={register("durationMinutes")}
           />
         </div>
 
         <div className="grid gap-3 md:grid-cols-2">
           <Field
-            error={getFieldError(state, "location")}
+            error={getClientFieldError(formState.errors, "location")}
             label="Location"
             name="location"
             placeholder="Zoom / onsite / phone"
+            registration={register("location")}
           />
           <Field
-            error={getFieldError(state, "result")}
+            error={getClientFieldError(formState.errors, "result")}
             label="Result"
             name="result"
             placeholder="Advanced to onsite"
+            registration={register("result")}
           />
         </div>
 
@@ -241,11 +311,11 @@ function InterviewPanel({
           </label>
           <textarea
             id="interview-notes"
-            name="notes"
             className={textareaClassName}
             placeholder="Prep themes, panel names, takeaways, and follow-up context."
+            {...register("notes")}
           />
-          <FieldError error={getFieldError(state, "notes")} />
+          <FieldError error={getClientFieldError(formState.errors, "notes")} />
         </div>
 
         <FormStateMessage state={state} />
@@ -304,11 +374,19 @@ function TaskPanel({
   jobId: string
   tasks: JobTaskListItem[]
 }>) {
-  const [state, action, isPending] = useActionState(
-    createJobTaskAction,
-    initialJobTaskState,
-  )
-  useRefreshOnSuccess(state.status)
+  const {
+    formAction,
+    formState,
+    isPending,
+    register,
+    state,
+    submitForm,
+  } = useWorkflowSchemaForm({
+    action: createJobTaskAction,
+    defaultValues: emptyTaskFormValues,
+    initialState: initialJobTaskState,
+    schema: taskFormSchema,
+  })
 
   return (
     <WorkflowCard
@@ -317,23 +395,26 @@ function TaskPanel({
       title="Follow-up tasks"
     >
       <WorkflowForm
-        action={action}
+        action={formAction}
         isPending={isPending}
         jobId={jobId}
-        resetOnSuccess={state.status === "success"}
+        noValidate
+        onSubmit={submitForm}
       >
         <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_12rem_auto]">
           <Field
-            error={getFieldError(state, "title")}
+            error={getClientFieldError(formState.errors, "title")}
             label="Task"
             name="title"
             placeholder="Send follow-up after HR screen"
+            registration={register("title")}
           />
           <Field
-            error={getFieldError(state, "dueDate")}
+            error={getClientFieldError(formState.errors, "dueDate")}
             label="Due date"
             name="dueDate"
             type="date"
+            registration={register("dueDate")}
           />
           <div className="flex items-end">
             <Button type="submit" disabled={isPending} className="w-full md:w-auto">
@@ -476,13 +557,17 @@ function WorkflowForm({
   children,
   isPending,
   jobId,
-  resetOnSuccess,
+  noValidate = false,
+  onSubmit,
+  resetOnSuccess = false,
 }: Readonly<{
   action: (payload: FormData) => void
   children: React.ReactNode
   isPending: boolean
   jobId: string
-  resetOnSuccess: boolean
+  noValidate?: boolean
+  onSubmit?: React.FormEventHandler<HTMLFormElement>
+  resetOnSuccess?: boolean
 }>) {
   const formRef = React.useRef<HTMLFormElement>(null)
 
@@ -495,7 +580,13 @@ function WorkflowForm({
   }, [resetOnSuccess])
 
   return (
-    <form ref={formRef} action={action} className="grid gap-4">
+    <form
+      ref={formRef}
+      action={action}
+      className="grid gap-4"
+      noValidate={noValidate}
+      onSubmit={onSubmit}
+    >
       <input type="hidden" name="jobId" value={jobId} />
       {children}
       {isPending ? (
@@ -510,12 +601,14 @@ function Field({
   label,
   name,
   placeholder,
+  registration,
   type = "text",
 }: Readonly<{
   error?: string
   label: string
   name: string
   placeholder?: string
+  registration?: UseFormRegisterReturn
   type?: React.ComponentProps<typeof Input>["type"]
 }>) {
   const describedBy = error ? `${name}-error` : undefined
@@ -527,11 +620,11 @@ function Field({
       </label>
       <Input
         id={name}
-        name={name}
         type={type}
         placeholder={placeholder}
         aria-invalid={error ? "true" : "false"}
         aria-describedby={describedBy}
+        {...registration}
       />
       <FieldError error={error} id={describedBy} />
     </div>
@@ -543,11 +636,13 @@ function SelectField({
   label,
   name,
   options,
+  registration,
 }: Readonly<{
   error?: string
   label: string
   name: string
   options: Array<{ label: string; value: string }>
+  registration?: UseFormRegisterReturn
 }>) {
   const describedBy = error ? `${name}-error` : undefined
 
@@ -558,10 +653,10 @@ function SelectField({
       </label>
       <select
         id={name}
-        name={name}
         className={selectClassName}
         aria-invalid={error ? "true" : "false"}
         aria-describedby={describedBy}
+        {...registration}
       >
         {options.map((option) => (
           <option key={option.value} value={option.value}>
@@ -625,6 +720,15 @@ function getFieldError<FieldName extends string>(
   return state.fieldErrors?.[fieldName]?.[0]
 }
 
+function getClientFieldError<FieldName extends string>(
+  clientErrors: FieldErrors<any>,
+  fieldName: FieldName,
+) {
+  const error = clientErrors[fieldName]?.message
+
+  return typeof error === "string" && error.length > 0 ? error : undefined
+}
+
 function formatShortDate(value: Date) {
   return new Intl.DateTimeFormat("en", {
     day: "numeric",
@@ -651,6 +755,63 @@ function useRefreshOnSuccess(status: JobDetailMutationState<string>["status"]) {
 
     router.refresh()
   }, [router, status])
+}
+
+function useWorkflowSchemaForm<
+  TValues extends Record<string, string | undefined>,
+  FieldName extends string,
+>({
+  action,
+  defaultValues,
+  initialState,
+  schema,
+}: {
+  action: (
+    state: JobDetailMutationState<FieldName>,
+    formData: FormData,
+  ) => Promise<JobDetailMutationState<FieldName>>
+  defaultValues: TValues
+  initialState: JobDetailMutationState<FieldName>
+  schema: z.ZodTypeAny
+}) {
+  const [state, formAction, isPending] = useActionState(action, initialState)
+  const {
+    clearErrors,
+    formState,
+    handleSubmit,
+    register,
+    reset,
+    setError,
+    setValue,
+  } = useForm<TValues>({
+    defaultValues: defaultValues as DefaultValues<TValues>,
+    resolver: zodFormResolver<TValues>(schema),
+  })
+  const submitForm = useValidatedNativeSubmit(handleSubmit)
+
+  useRefreshOnSuccess(state.status)
+
+  React.useEffect(() => {
+    syncServerFieldErrors<TValues>(state.fieldErrors, clearErrors, setError)
+  }, [clearErrors, setError, state.fieldErrors])
+
+  React.useEffect(() => {
+    if (state.status !== "success") {
+      return
+    }
+
+    reset(defaultValues)
+  }, [defaultValues, reset, state.status])
+
+  return {
+    formAction,
+    formState,
+    isPending,
+    register,
+    setValue,
+    state,
+    submitForm,
+  }
 }
 
 function formatInterviewType(value: "final" | "hr" | "technical") {

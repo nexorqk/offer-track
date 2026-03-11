@@ -6,6 +6,7 @@ import { useForm, type FieldErrors, type UseFormRegisterReturn } from "react-hoo
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { jobFormSchema } from "@/features/jobs/schemas/job"
 import {
   jobPriorityOptions,
   jobStatusOptions,
@@ -17,6 +18,11 @@ import {
   type JobFormState,
   type JobFormValues,
 } from "@/features/jobs/types/job"
+import {
+  syncServerFieldErrors,
+  useValidatedNativeSubmit,
+  zodFormResolver,
+} from "@/lib/forms/rhf-zod"
 
 type JobFormProps = {
   action: (
@@ -53,66 +59,24 @@ export function JobForm({
   const {
     clearErrors,
     formState,
-    getValues,
     handleSubmit,
     register,
     reset,
     setError,
   } = useForm<JobFormValues>({
     defaultValues: initialValues,
+    resolver: zodFormResolver<JobFormValues>(jobFormSchema),
   })
-  const allowNativeSubmitRef = React.useRef(false)
 
   React.useEffect(() => {
     reset(initialValues)
   }, [initialValues, reset])
 
   React.useEffect(() => {
-    if (!state.fieldErrors) {
-      return
-    }
-
-    clearErrors()
-
-    for (const [fieldName, messages] of Object.entries(state.fieldErrors)) {
-      const message = messages?.[0]
-
-      if (!message) {
-        continue
-      }
-
-      setError(fieldName as JobFormFieldName, {
-        message,
-        type: "server",
-      })
-    }
+    syncServerFieldErrors<JobFormValues>(state.fieldErrors, clearErrors, setError)
   }, [clearErrors, setError, state.fieldErrors])
 
-  const validateBeforeSubmit = handleSubmit(
-    () => {
-      allowNativeSubmitRef.current = true
-    },
-    () => {
-      allowNativeSubmitRef.current = false
-    },
-  )
-
-  const submitForm = (event: React.FormEvent<HTMLFormElement>) => {
-    if (allowNativeSubmitRef.current) {
-      allowNativeSubmitRef.current = false
-      return
-    }
-
-    const form = event.currentTarget
-
-    void validateBeforeSubmit(event).then(() => {
-      if (!allowNativeSubmitRef.current) {
-        return
-      }
-
-      form.requestSubmit()
-    })
-  }
+  const submitForm = useValidatedNativeSubmit(handleSubmit)
 
   const errorSummary = getErrorSummary(formState.errors)
   const showClientErrorSummary =
@@ -138,9 +102,7 @@ export function JobForm({
             label="Role title"
             name="title"
             placeholder="Senior Frontend Engineer"
-            registration={register("title", {
-              required: "Job title is required",
-            })}
+            registration={register("title")}
           />
           <div className="grid gap-2">
             <label htmlFor="companyName" className="text-sm font-medium">
@@ -153,9 +115,7 @@ export function JobForm({
               aria-invalid={
                 getFieldError(formState.errors, "companyName") ? "true" : "false"
               }
-              {...register("companyName", {
-                required: "Company name is required",
-              })}
+              {...register("companyName")}
             />
             <datalist id="job-company-options">
               {companyOptions.map((companyName) => (
@@ -231,10 +191,7 @@ export function JobForm({
             label="Source URL"
             name="sourceUrl"
             placeholder="https://..."
-            registration={register("sourceUrl", {
-              validate: (value) =>
-                !value || URL.canParse(value) || "Enter a valid source URL",
-            })}
+            registration={register("sourceUrl")}
           />
           <Field
             error={getFieldError(formState.errors, "appliedAt")}
@@ -259,10 +216,7 @@ export function JobForm({
             name="salaryMin"
             placeholder="4500"
             type="number"
-            registration={register("salaryMin", {
-              validate: (value) =>
-                !value || isWholeNumber(value) || "Enter a whole number",
-            })}
+            registration={register("salaryMin")}
           />
           <Field
             error={getFieldError(formState.errors, "salaryMax")}
@@ -270,21 +224,7 @@ export function JobForm({
             name="salaryMax"
             placeholder="5500"
             type="number"
-            registration={register("salaryMax", {
-              validate: (value) => {
-                if (value && !isWholeNumber(value)) {
-                  return "Enter a whole number"
-                }
-
-                const salaryMin = getValues("salaryMin")
-
-                if (salaryMin && value && Number(value) < Number(salaryMin)) {
-                  return "Maximum salary must be greater than or equal to minimum salary"
-                }
-
-                return true
-              },
-            })}
+            registration={register("salaryMax")}
           />
         </div>
 
@@ -439,10 +379,6 @@ function getErrorSummary(clientErrors: FieldErrors<JobFormValues>) {
       },
     ]
   })
-}
-
-function isWholeNumber(value: string) {
-  return /^\d+$/.test(value)
 }
 
 function formatStatusLabel(value: string) {

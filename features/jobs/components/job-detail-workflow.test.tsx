@@ -1,7 +1,23 @@
-import { render, screen } from "@testing-library/react"
-import { describe, expect, it, vi } from "vitest"
+import { render, screen, waitFor } from "@testing-library/react"
+import userEvent from "@testing-library/user-event"
+import { beforeEach, describe, expect, it, vi } from "vitest"
 
 import { JobDetailWorkflow } from "@/app/(dashboard)/jobs/[id]/_components/job-detail-workflow"
+
+const actionMocks = vi.hoisted(() => ({
+  createJobContactAction: vi.fn(
+    async (_state: unknown, _formData: FormData) => ({ status: "idle" as const }),
+  ),
+  createJobInterviewAction: vi.fn(
+    async (_state: unknown, _formData: FormData) => ({ status: "idle" as const }),
+  ),
+  createJobNoteAction: vi.fn(
+    async (_state: unknown, _formData: FormData) => ({ status: "idle" as const }),
+  ),
+  createJobTaskAction: vi.fn(
+    async (_state: unknown, _formData: FormData) => ({ status: "idle" as const }),
+  ),
+}))
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({
@@ -10,13 +26,20 @@ vi.mock("next/navigation", () => ({
 }))
 
 vi.mock("@/features/jobs/server/actions", () => ({
-  createJobContactAction: vi.fn(async () => ({ status: "idle" })),
-  createJobInterviewAction: vi.fn(async () => ({ status: "idle" })),
-  createJobNoteAction: vi.fn(async () => ({ status: "idle" })),
-  createJobTaskAction: vi.fn(async () => ({ status: "idle" })),
+  createJobContactAction: actionMocks.createJobContactAction,
+  createJobInterviewAction: actionMocks.createJobInterviewAction,
+  createJobNoteAction: actionMocks.createJobNoteAction,
+  createJobTaskAction: actionMocks.createJobTaskAction,
 }))
 
 describe("JobDetailWorkflow", () => {
+  beforeEach(() => {
+    actionMocks.createJobContactAction.mockClear()
+    actionMocks.createJobInterviewAction.mockClear()
+    actionMocks.createJobNoteAction.mockClear()
+    actionMocks.createJobTaskAction.mockClear()
+  })
+
   it("renders the interviews panel and empty state", () => {
     render(
       <JobDetailWorkflow
@@ -65,5 +88,65 @@ describe("JobDetailWorkflow", () => {
     expect(screen.getByText("Zoom")).toBeInTheDocument()
     expect(screen.getByText("Advanced to onsite")).toBeInTheDocument()
     expect(screen.getByText("Bring architecture examples")).toBeInTheDocument()
+  })
+
+  it("shows client-side validation for contact, interview, and task forms", async () => {
+    const user = userEvent.setup()
+
+    render(
+      <JobDetailWorkflow
+        contacts={[]}
+        interviews={[]}
+        jobId="job-1"
+        notes={[]}
+        tasks={[]}
+      />,
+    )
+
+    await user.click(screen.getByRole("button", { name: "Add contact" }))
+    await user.click(screen.getByRole("button", { name: "Add interview" }))
+    await user.click(screen.getByRole("button", { name: "Add task" }))
+
+    expect(actionMocks.createJobContactAction).not.toHaveBeenCalled()
+    expect(actionMocks.createJobInterviewAction).not.toHaveBeenCalled()
+    expect(actionMocks.createJobTaskAction).not.toHaveBeenCalled()
+
+    expect(screen.getByText("Contact name is required")).toBeInTheDocument()
+    expect(screen.getByText("Interview time is required")).toBeInTheDocument()
+    expect(screen.getByText("Task title is required")).toBeInTheDocument()
+  })
+
+  it("submits a valid contact form to the action", async () => {
+    const user = userEvent.setup()
+
+    render(
+      <JobDetailWorkflow
+        contacts={[]}
+        interviews={[]}
+        jobId="job-1"
+        notes={[]}
+        tasks={[]}
+      />,
+    )
+
+    await user.type(screen.getByLabelText("Name"), "Jane Recruiter")
+    await user.type(screen.getByLabelText("Email"), "jane@company.com")
+    await user.click(screen.getByRole("button", { name: "Add contact" }))
+
+    await waitFor(() => expect(actionMocks.createJobContactAction).toHaveBeenCalledTimes(1))
+
+    const submittedFormData = actionMocks.createJobContactAction.mock.calls[0]?.[1] as
+      | FormData
+      | undefined
+
+    expect(submittedFormData).toBeInstanceOf(FormData)
+
+    if (!submittedFormData) {
+      return
+    }
+
+    expect(submittedFormData.get("jobId")).toBe("job-1")
+    expect(submittedFormData.get("name")).toBe("Jane Recruiter")
+    expect(submittedFormData.get("email")).toBe("jane@company.com")
   })
 })
