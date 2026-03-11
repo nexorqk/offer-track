@@ -1,8 +1,9 @@
 import "server-only"
 
-import { and, asc, desc, eq, gte, isNotNull, lt } from "drizzle-orm"
+import { and, asc, desc, eq, gte, isNotNull, lt, sql } from "drizzle-orm"
 import { cache } from "react"
 
+import { buildDashboardSummary } from "@/features/dashboard/server/overview-helpers"
 import { db } from "@/lib/db"
 import {
   companies,
@@ -12,9 +13,6 @@ import {
   notes,
   tasks,
 } from "@/lib/db/schema"
-
-const STAGES_WITH_RESPONSE = new Set(["hr_screen", "technical", "final", "offer", "rejected"])
-const ACTIVE_JOB_STATUSES = new Set(["wishlist", "applied", "hr_screen", "technical", "final"])
 
 export type DashboardActivityItem = {
   companyName: string
@@ -46,14 +44,7 @@ export type DashboardOverdueTask = {
 export type DashboardOverview = {
   overdueTasks: DashboardOverdueTask[]
   recentActivity: DashboardActivityItem[]
-  summary: {
-    activeApplications: number
-    interviewCount: number
-    lateStageApplications: number
-    overdueTasks: number
-    responseRate: number
-    responseRateBase: number
-  }
+  summary: ReturnType<typeof buildDashboardSummary>
   upcomingInterviews: DashboardUpcomingInterview[]
 }
 
@@ -64,6 +55,7 @@ export const getDashboardOverview = cache(async function getDashboardOverview(
 
   const [
     jobRows,
+    interviewCountRows,
     upcomingInterviewRows,
     overdueTaskRows,
     recentStageRows,
@@ -76,6 +68,13 @@ export const getDashboardOverview = cache(async function getDashboardOverview(
         status: jobs.status,
       })
       .from(jobs)
+      .where(eq(jobs.userId, userId)),
+    db
+      .select({
+        count: sql<number>`count(*)::int`,
+      })
+      .from(interviews)
+      .innerJoin(jobs, eq(interviews.jobId, jobs.id))
       .where(eq(jobs.userId, userId)),
     db
       .select({
@@ -157,17 +156,6 @@ export const getDashboardOverview = cache(async function getDashboardOverview(
       .limit(3),
   ])
 
-  const appliedJobs = jobRows.filter((job) => job.status !== "wishlist")
-  const respondedJobs = appliedJobs.filter((job) => STAGES_WITH_RESPONSE.has(job.status))
-  const activeApplications = jobRows.filter((job) => ACTIVE_JOB_STATUSES.has(job.status)).length
-  const lateStageApplications = jobRows.filter((job) =>
-    ["technical", "final", "offer"].includes(job.status),
-  ).length
-  const responseRate =
-    appliedJobs.length === 0
-      ? 0
-      : Math.round((respondedJobs.length / appliedJobs.length) * 100)
-
   const recentActivity = [
     ...recentStageRows.map<DashboardActivityItem>((entry) => ({
       companyName: entry.companyName,
@@ -215,14 +203,7 @@ export const getDashboardOverview = cache(async function getDashboardOverview(
         : [],
     ),
     recentActivity,
-    summary: {
-      activeApplications,
-      interviewCount: upcomingInterviewRows.length,
-      lateStageApplications,
-      overdueTasks: overdueTaskRows.length,
-      responseRate,
-      responseRateBase: appliedJobs.length,
-    },
+    summary: buildDashboardSummary(jobRows, interviewCountRows[0]?.count ?? 0),
     upcomingInterviews: upcomingInterviewRows.map((interview) => ({
       companyName: interview.companyName,
       id: interview.id,

@@ -1,19 +1,17 @@
 import {
+  BadgeCheck,
   ArrowUpRight,
   BriefcaseBusiness,
   CalendarClock,
-  MessageSquareText,
-  Siren,
+  Sparkles,
 } from "lucide-react"
 
 type DashboardSummaryCardsProps = {
   summary: {
     activeApplications: number
-    interviewCount: number
-    lateStageApplications: number
-    overdueTasks: number
-    responseRate: number
-    responseRateBase: number
+    interviews: number
+    offers: number
+    totalJobs: number
   }
 }
 
@@ -22,28 +20,28 @@ const cardThemes = [
     accent: "from-orange-500/24 via-orange-400/10 to-transparent",
     bars: ["h-4", "h-7", "h-5", "h-9", "h-6"],
     icon: BriefcaseBusiness,
-    key: "activeApplications",
+    key: "totalJobs",
     ring: "bg-orange-500/12 text-orange-700 dark:text-orange-300",
   },
   {
     accent: "from-cyan-500/24 via-cyan-400/10 to-transparent",
     bars: ["h-6", "h-8", "h-5", "h-7", "h-9"],
     icon: CalendarClock,
-    key: "interviewCount",
+    key: "activeApplications",
     ring: "bg-cyan-500/12 text-cyan-700 dark:text-cyan-300",
   },
   {
     accent: "from-emerald-500/24 via-emerald-400/10 to-transparent",
     bars: ["h-5", "h-8", "h-10", "h-7", "h-9"],
-    icon: MessageSquareText,
-    key: "responseRate",
+    icon: Sparkles,
+    key: "interviews",
     ring: "bg-emerald-500/12 text-emerald-700 dark:text-emerald-300",
   },
   {
     accent: "from-rose-500/24 via-rose-400/10 to-transparent",
     bars: ["h-10", "h-8", "h-6", "h-5", "h-4"],
-    icon: Siren,
-    key: "overdueTasks",
+    icon: BadgeCheck,
+    key: "offers",
     ring: "bg-rose-500/12 text-rose-700 dark:text-rose-300",
   },
 ] as const
@@ -53,40 +51,40 @@ export function DashboardSummaryCards({
 }: Readonly<DashboardSummaryCardsProps>) {
   const cards = [
     {
-      eyebrow: "Open pipeline",
+      eyebrow: "Total jobs",
+      key: "totalJobs",
+      note:
+        summary.totalJobs > 0
+          ? `${summary.totalJobs} tracked opportunities across the funnel`
+          : "Add the first role to start the pipeline",
+      value: String(summary.totalJobs),
+    },
+    {
+      eyebrow: "Active applications",
       key: "activeApplications",
       note:
-        summary.lateStageApplications > 0
-          ? `${summary.lateStageApplications} in technical or better`
-          : "No roles past screening yet",
+        summary.activeApplications > 0
+          ? `${summary.activeApplications} roles still moving through the pipeline`
+          : "No active roles in flight right now",
       value: String(summary.activeApplications),
     },
     {
-      eyebrow: "Next seven days",
-      key: "interviewCount",
+      eyebrow: "Interviews",
+      key: "interviews",
       note:
-        summary.interviewCount > 0
-          ? `${summary.interviewCount} conversations already booked`
-          : "Nothing booked right now",
-      value: String(summary.interviewCount),
+        summary.interviews > 0
+          ? `${summary.interviews} interview loops captured so far`
+          : "No interviews recorded yet",
+      value: String(summary.interviews),
     },
     {
-      eyebrow: "Signals back",
-      key: "responseRate",
+      eyebrow: "Offers",
+      key: "offers",
       note:
-        summary.responseRateBase > 0
-          ? `${summary.responseRateBase} sent applications tracked`
-          : "Build the first outbound batch",
-      value: `${summary.responseRate}%`,
-    },
-    {
-      eyebrow: "Needs action",
-      key: "overdueTasks",
-      note:
-        summary.overdueTasks > 0
-          ? "Clear the blockers before the next interview loop"
-          : "Task queue is under control",
-      value: String(summary.overdueTasks),
+        summary.offers > 0
+          ? `${summary.offers} roles reached the offer stage`
+          : "No offers on the board yet",
+      value: String(summary.offers),
     },
   ] as const
 
