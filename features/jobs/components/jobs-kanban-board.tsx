@@ -13,13 +13,18 @@ import {
   useSensors,
 } from "@dnd-kit/core"
 import { CSS } from "@dnd-kit/utilities"
-import { useMutation } from "@tanstack/react-query"
+import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { GripVertical, MoveRight } from "lucide-react"
 
 import { buttonVariants } from "@/components/ui/button-variants"
 import { jobStatusOptions, type JobFormInput } from "@/features/jobs/schemas/job"
 import { updateJobStatusAction } from "@/features/jobs/server/actions"
 import type { JobListItem } from "@/features/jobs/types/job"
+import {
+  analyticsQueryKeys,
+  companiesQueryKeys,
+  jobsQueryKeys,
+} from "@/lib/query-keys"
 import { cn } from "@/lib/utils"
 
 type JobStatus = NonNullable<JobFormInput["status"]>
@@ -29,6 +34,7 @@ export function JobsKanbanBoard({
 }: Readonly<{
   jobs: JobListItem[]
 }>) {
+  const queryClient = useQueryClient()
   const [jobs, setJobs] = React.useState(initialJobs)
   const [errorMessage, setErrorMessage] = React.useState<string | null>(null)
   const sensors = useSensors(
@@ -45,6 +51,22 @@ export function JobsKanbanBoard({
 
   const updateStatusMutation = useMutation({
     mutationFn: updateJobStatusAction,
+    onSuccess: async (_, variables) => {
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: jobsQueryKeys.lists(),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: jobsQueryKeys.detail(variables.jobId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: analyticsQueryKeys.overview(),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: companiesQueryKeys.list(),
+        }),
+      ])
+    },
   })
 
   function handleDragEnd(event: DragEndEvent) {

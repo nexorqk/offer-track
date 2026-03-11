@@ -1,6 +1,8 @@
 "use client"
 
+import * as React from "react"
 import { useActionState } from "react"
+import { useRouter } from "next/navigation"
 import { CheckCheck, RotateCcw } from "lucide-react"
 
 import { buttonVariants } from "@/components/ui/button-variants"
@@ -19,10 +21,19 @@ export function TaskCompletionForm({
   completed,
   taskId,
 }: Readonly<TaskCompletionFormProps>) {
+  const router = useRouter()
   const [state, formAction, isPending] = useActionState(
     toggleTaskCompletionAction,
     initialTaskToggleState,
   )
+
+  React.useEffect(() => {
+    if (state.status !== "success") {
+      return
+    }
+
+    router.refresh()
+  }, [router, state.status])
 
   return (
     <div className="flex flex-col items-end gap-2">

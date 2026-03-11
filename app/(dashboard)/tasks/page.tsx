@@ -1,5 +1,5 @@
 import { requireCurrentUser } from "@/features/auth/server/auth"
-import { TasksPageContent } from "@/features/tasks/components/tasks-page-content"
+import { TasksPageQuery } from "@/features/tasks/components/tasks-page-query"
 import { parseTaskListFilters } from "@/features/tasks/schemas/task-list"
 import {
   buildTasksPageData,
@@ -15,10 +15,5 @@ export default async function TasksPage({ searchParams }: TasksPageProps) {
   const filters = parseTaskListFilters(params)
   const tasks = await listTasksForUser(user.id)
 
-  return (
-    <TasksPageContent
-      filter={filters.status}
-      {...buildTasksPageData(tasks, filters.status)}
-    />
-  )
+  return <TasksPageQuery filter={filters.status} initialData={buildTasksPageData(tasks, filters.status)} />
 }

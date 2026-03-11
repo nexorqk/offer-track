@@ -3,6 +3,12 @@ import { describe, expect, it, vi } from "vitest"
 
 import { JobDetailWorkflow } from "@/app/(dashboard)/jobs/[id]/_components/job-detail-workflow"
 
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({
+    refresh: vi.fn(),
+  }),
+}))
+
 vi.mock("@/features/jobs/server/actions", () => ({
   createJobContactAction: vi.fn(async () => ({ status: "idle" })),
   createJobInterviewAction: vi.fn(async () => ({ status: "idle" })),

@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import { useActionState } from "react"
+import { useRouter } from "next/navigation"
 import {
   CalendarClock,
   CalendarPlus2,
@@ -63,6 +64,7 @@ function ContactPanel({
     createJobContactAction,
     initialJobContactState,
   )
+  useRefreshOnSuccess(state.status)
 
   return (
     <WorkflowCard
@@ -167,6 +169,7 @@ function InterviewPanel({
     createJobInterviewAction,
     initialJobInterviewState,
   )
+  useRefreshOnSuccess(state.status)
   const [timezoneOffsetMinutes, setTimezoneOffsetMinutes] = React.useState(0)
 
   React.useEffect(() => {
@@ -305,6 +308,7 @@ function TaskPanel({
     createJobTaskAction,
     initialJobTaskState,
   )
+  useRefreshOnSuccess(state.status)
 
   return (
     <WorkflowCard
@@ -379,6 +383,7 @@ function NotePanel({
     createJobNoteAction,
     initialJobNoteState,
   )
+  useRefreshOnSuccess(state.status)
 
   return (
     <WorkflowCard
@@ -634,6 +639,18 @@ function formatDateTime(value: Date) {
     minute: "2-digit",
     month: "short",
   }).format(value)
+}
+
+function useRefreshOnSuccess(status: JobDetailMutationState<string>["status"]) {
+  const router = useRouter()
+
+  React.useEffect(() => {
+    if (status !== "success") {
+      return
+    }
+
+    router.refresh()
+  }, [router, status])
 }
 
 function formatInterviewType(value: "final" | "hr" | "technical") {

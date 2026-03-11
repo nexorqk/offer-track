@@ -1,6 +1,12 @@
 import { render, screen } from "@testing-library/react"
 import { describe, expect, it, vi } from "vitest"
 
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({
+    refresh: vi.fn(),
+  }),
+}))
+
 vi.mock("@/features/tasks/server/actions", () => ({
   initialTaskToggleState: { status: "idle" },
   toggleTaskCompletionAction: vi.fn(async () => ({ status: "idle" })),
