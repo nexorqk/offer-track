@@ -9,7 +9,12 @@ export const jobsQueryKeys = {
     [
       "jobs",
       "list",
+      filters.appliedFrom,
+      filters.appliedTo,
       filters.q,
+      filters.source,
+      filters.salaryMin,
+      filters.salaryMax,
       filters.status,
       filters.priority,
       filters.workMode,

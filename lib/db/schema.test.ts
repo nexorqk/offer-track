@@ -45,6 +45,7 @@ describe("database schema", () => {
       "id",
       "userId",
       "name",
+      "nameKey",
       "website",
       "location",
       "industry",
@@ -73,6 +74,14 @@ describe("database schema", () => {
       "createdAt",
       "updatedAt",
     ])
+  })
+
+  it("deduplicates company names per user with a normalized key", () => {
+    const companyUniqueConstraintNames = getTableConfig(companies).uniqueConstraints.map(
+      (constraint) => constraint.getName(),
+    )
+
+    expect(companyUniqueConstraintNames).toContain("companies_user_id_name_key_key")
   })
 
   it("defines the minimum foreign-key graph", () => {

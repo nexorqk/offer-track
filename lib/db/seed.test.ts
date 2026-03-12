@@ -40,6 +40,7 @@ describe("database seed plan", () => {
 
     for (const company of plan.companies) {
       expect(profileIds.has(company.userId)).toBe(true)
+      expect(company.nameKey).toBe(company.name.trim().toLowerCase())
     }
 
     for (const job of plan.jobs) {

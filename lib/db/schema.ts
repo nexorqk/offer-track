@@ -7,6 +7,7 @@ import {
   pgTable,
   text,
   timestamp,
+  unique,
   uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
@@ -88,6 +89,7 @@ export const companies = pgTable(
       .notNull()
       .references(() => profiles.id, { onDelete: "cascade" }),
     name: text("name").notNull(),
+    nameKey: text("name_key").notNull(),
     website: text("website"),
     location: text("location"),
     industry: text("industry"),
@@ -102,6 +104,7 @@ export const companies = pgTable(
   (table) => [
     index("companies_user_id_idx").on(table.userId),
     index("companies_name_idx").on(table.name),
+    unique("companies_user_id_name_key_key").on(table.userId, table.nameKey),
   ]
 );
 

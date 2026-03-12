@@ -1,6 +1,6 @@
 import "server-only"
 
-import { and, asc, desc, eq, ilike, or } from "drizzle-orm"
+import { and, asc, desc, eq, gte, ilike, lte, or } from "drizzle-orm"
 
 import { defaultJobListFilters, type JobListFilters } from "@/features/jobs/schemas/job-list"
 import { db } from "@/lib/db"
@@ -37,6 +37,34 @@ export async function listJobsForUser(
 
   if (filters.workMode !== "all") {
     conditions.push(eq(jobs.workMode, filters.workMode))
+  }
+
+  if (filters.source) {
+    conditions.push(ilike(jobs.source, `%${filters.source}%`))
+  }
+
+  const appliedFrom = parseFilterDateStart(filters.appliedFrom)
+
+  if (appliedFrom) {
+    conditions.push(gte(jobs.appliedAt, appliedFrom))
+  }
+
+  const appliedTo = parseFilterDateEnd(filters.appliedTo)
+
+  if (appliedTo) {
+    conditions.push(lte(jobs.appliedAt, appliedTo))
+  }
+
+  const salaryMin = parseSalaryFilterValue(filters.salaryMin)
+
+  if (salaryMin !== null) {
+    conditions.push(or(gte(jobs.salaryMin, salaryMin), gte(jobs.salaryMax, salaryMin))!)
+  }
+
+  const salaryMax = parseSalaryFilterValue(filters.salaryMax)
+
+  if (salaryMax !== null) {
+    conditions.push(or(lte(jobs.salaryMin, salaryMax), lte(jobs.salaryMax, salaryMax))!)
   }
 
   if (filters.q) {
@@ -80,6 +108,33 @@ export async function listJobsForUser(
     .innerJoin(companies, eq(jobs.companyId, companies.id))
     .where(and(...conditions))
     .orderBy(...orderBy)
+}
+
+function parseFilterDateStart(value: string) {
+  if (!value) {
+    return null
+  }
+
+  const date = new Date(`${value}T00:00:00.000Z`)
+  return Number.isNaN(date.getTime()) ? null : date
+}
+
+function parseFilterDateEnd(value: string) {
+  if (!value) {
+    return null
+  }
+
+  const date = new Date(`${value}T23:59:59.999Z`)
+  return Number.isNaN(date.getTime()) ? null : date
+}
+
+function parseSalaryFilterValue(value: string) {
+  if (!value) {
+    return null
+  }
+
+  const parsed = Number(value)
+  return Number.isFinite(parsed) ? parsed : null
 }
 
 export async function listCompanyNameOptions(userId: string) {

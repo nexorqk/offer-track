@@ -55,9 +55,14 @@ export function JobsPageQuery({
   const queryKey = React.useMemo(
     () => jobsQueryKeys.list(filters),
     [
+      filters.appliedFrom,
+      filters.appliedTo,
       filters.priority,
       filters.q,
+      filters.salaryMax,
+      filters.salaryMin,
       filters.sort,
+      filters.source,
       filters.status,
       filters.view,
       filters.workMode,
@@ -90,6 +95,7 @@ export function JobsPageQuery({
   )
   const filteredAppliedJobs = jobs.filter((job) => job.status === "applied")
   const filteredOfferJobs = jobs.filter((job) => job.status === "offer")
+  const activeFilterSummary = buildActiveFilterSummary(filters)
 
   return (
     <div className="flex flex-col gap-4">
@@ -101,29 +107,46 @@ export function JobsPageQuery({
 
       <div className="flex flex-col gap-5 pb-8">
         <section>
-          <article className="overflow-hidden rounded-[2.25rem] border bg-[radial-gradient(circle_at_top_left,color-mix(in_oklch,var(--color-primary)_10%,transparent),transparent_40%),linear-gradient(180deg,color-mix(in_oklch,var(--color-background)_92%,transparent),color-mix(in_oklch,var(--color-muted)_20%,transparent))] p-5 shadow-sm">
+          <article className="overflow-hidden rounded-[2.25rem] border bg-[radial-gradient(circle_at_top_left,color-mix(in_oklch,var(--color-primary)_10%,transparent),transparent_40%),linear-gradient(180deg,color-mix(in_oklch,var(--color-background)_92%,transparent),color-mix(in_oklch,var(--color-muted)_20%,transparent))] p-5 shadow-sm surface-enter surface-enter-delay-1 lg:p-6">
             <div className="flex flex-col gap-6">
-              <div className="flex flex-col gap-2">
-                <span className="text-[0.68rem] font-medium uppercase tracking-[0.28em] text-muted-foreground">
-                  Jobs workspace
-                </span>
-                <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-                  <div className="flex flex-col gap-2">
-                    <h1 className="text-3xl font-semibold tracking-tight">
-                      Pipeline built for action, not just storage.
-                    </h1>
-                    <p className="max-w-2xl text-sm leading-6 text-muted-foreground">
-                      Search, filter, and move opportunities without a create form competing for attention.
-                    </p>
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+                <div className="flex flex-col gap-2">
+                  <span className="eyebrow-label">
+                    Jobs workspace
+                  </span>
+                  <h1 className="max-w-3xl text-balance text-3xl font-semibold tracking-tight md:text-[2.45rem]">
+                    Pipeline built for action, not just storage.
+                  </h1>
+                  <p className="max-w-2xl text-sm leading-6 text-muted-foreground">
+                    Search, filter, and move opportunities without a create form competing for attention.
+                  </p>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2">
+                  <div className="inline-flex items-center gap-2 rounded-full border bg-background/80 px-3 py-1.5 text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
+                    <SlidersHorizontal className="size-3.5" />
+                    {hasActiveFilters ? `${activeFilterSummary.length} active filters` : "Full pipeline"}
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Link href="/jobs/new" className={buttonVariants({ size: "sm" })}>
-                      <Plus data-icon="inline-start" />
-                      New job
-                    </Link>
-                  </div>
+                  <Link href="/jobs/new" className={buttonVariants({ size: "sm" })}>
+                    <Plus data-icon="inline-start" />
+                    New job
+                  </Link>
                 </div>
               </div>
+
+              {activeFilterSummary.length > 0 ? (
+                <div className="flex flex-wrap gap-2">
+                  {activeFilterSummary.map((item) => (
+                    <span
+                      key={item.label}
+                      className="rounded-full border bg-background/70 px-3 py-1.5 text-xs text-muted-foreground shadow-sm"
+                    >
+                      <strong className="mr-1 font-medium text-foreground">{item.label}:</strong>
+                      {item.value}
+                    </span>
+                  ))}
+                </div>
+              ) : null}
 
               <div className="grid gap-3 sm:grid-cols-3">
                 <StatCard
@@ -157,10 +180,10 @@ export function JobsPageQuery({
           </article>
         </section>
 
-        <section className="overflow-hidden rounded-[2.25rem] border bg-background/92 shadow-sm">
+        <section className="overflow-hidden rounded-[2.25rem] border bg-background/92 shadow-sm surface-enter surface-enter-delay-2">
           <div className="border-b px-5 py-4">
-            <div className="flex flex-col gap-2">
-              <span className="text-[0.68rem] font-medium uppercase tracking-[0.28em] text-muted-foreground">
+            <div className="flex flex-col gap-3">
+              <span className="eyebrow-label">
                 Job list
               </span>
               <div className="flex flex-col gap-2 lg:flex-row lg:items-end lg:justify-between">
@@ -201,77 +224,141 @@ export function JobsPageQuery({
             </div>
           </div>
 
-          <form method="get" className="grid gap-3 border-b p-4 lg:grid-cols-[minmax(0,1.1fr)_12rem_12rem_12rem_12rem_auto]">
-            <input type="hidden" name="view" value={filters.view} />
-            <div className="grid gap-2">
-              <label htmlFor="jobs-search" className="text-sm font-medium">
-                Search
-              </label>
-              <Input
-                id="jobs-search"
-                name="q"
-                defaultValue={filters.q}
-                placeholder="Search by role, company, or location"
+          <div className="border-b bg-muted/[0.12] px-4 py-4">
+            <form method="get" className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+              <input type="hidden" name="view" value={filters.view} />
+              <div className="grid gap-2 rounded-[1.5rem] border bg-background/80 p-3 shadow-sm md:col-span-2">
+                <label htmlFor="jobs-search" className="text-sm font-medium">
+                  Search
+                </label>
+                <Input
+                  id="jobs-search"
+                  name="q"
+                  defaultValue={filters.q}
+                  placeholder="Search by role, company, or location"
+                />
+              </div>
+
+              <div className="grid gap-2 rounded-[1.5rem] border bg-background/80 p-3 shadow-sm">
+                <label htmlFor="jobs-source" className="text-sm font-medium">
+                  Source
+                </label>
+                <Input
+                  id="jobs-source"
+                  name="source"
+                  defaultValue={filters.source}
+                  placeholder="LinkedIn, referral, company site"
+                />
+              </div>
+
+              <FilterSelect
+                defaultValue={filters.status}
+                label="Status"
+                name="status"
+                options={jobListStatusOptions.map((value) => ({
+                  label: value === "all" ? "All statuses" : formatStatusLabel(value),
+                  value,
+                }))}
               />
-            </div>
 
-            <FilterSelect
-              defaultValue={filters.status}
-              label="Status"
-              name="status"
-              options={jobListStatusOptions.map((value) => ({
-                label: value === "all" ? "All statuses" : formatStatusLabel(value),
-                value,
-              }))}
-            />
+              <FilterSelect
+                defaultValue={filters.priority}
+                label="Priority"
+                name="priority"
+                options={jobListPriorityOptions.map((value) => ({
+                  label: value === "all" ? "All priorities" : capitalize(value),
+                  value,
+                }))}
+              />
 
-            <FilterSelect
-              defaultValue={filters.priority}
-              label="Priority"
-              name="priority"
-              options={jobListPriorityOptions.map((value) => ({
-                label: value === "all" ? "All priorities" : capitalize(value),
-                value,
-              }))}
-            />
+              <FilterSelect
+                defaultValue={filters.workMode}
+                label="Work mode"
+                name="workMode"
+                options={jobListWorkModeOptions.map((value) => ({
+                  label: value === "all" ? "All modes" : capitalize(value),
+                  value,
+                }))}
+              />
 
-            <FilterSelect
-              defaultValue={filters.workMode}
-              label="Work mode"
-              name="workMode"
-              options={jobListWorkModeOptions.map((value) => ({
-                label: value === "all" ? "All modes" : capitalize(value),
-                value,
-              }))}
-            />
+              <div className="grid gap-2 rounded-[1.5rem] border bg-background/80 p-3 shadow-sm">
+                <label htmlFor="jobs-applied-from" className="text-sm font-medium">
+                  Applied from
+                </label>
+                <Input
+                  id="jobs-applied-from"
+                  name="appliedFrom"
+                  defaultValue={filters.appliedFrom}
+                  type="date"
+                />
+              </div>
 
-            <FilterSelect
-              defaultValue={filters.sort}
-              label="Sort by"
-              name="sort"
-              options={jobListSortOptions.map((value) => ({
-                label: formatSortLabel(value),
-                value,
-              }))}
-            />
+              <div className="grid gap-2 rounded-[1.5rem] border bg-background/80 p-3 shadow-sm">
+                <label htmlFor="jobs-applied-to" className="text-sm font-medium">
+                  Applied to
+                </label>
+                <Input
+                  id="jobs-applied-to"
+                  name="appliedTo"
+                  defaultValue={filters.appliedTo}
+                  type="date"
+                />
+              </div>
 
-            <div className="flex items-end gap-2">
-              <button className={buttonVariants({ size: "lg" })} type="submit">
-                Apply
-              </button>
-              {hasActiveFilters ? (
-                <Link
-                  href="/jobs"
-                  className={buttonVariants({ size: "lg", variant: "outline" })}
-                >
-                  <X data-icon="inline-start" />
-                  Reset
-                </Link>
-              ) : null}
-            </div>
-          </form>
+              <div className="grid gap-2 rounded-[1.5rem] border bg-background/80 p-3 shadow-sm">
+                <label htmlFor="jobs-salary-min" className="text-sm font-medium">
+                  Salary min
+                </label>
+                <Input
+                  id="jobs-salary-min"
+                  name="salaryMin"
+                  defaultValue={filters.salaryMin}
+                  placeholder="4500"
+                  type="number"
+                />
+              </div>
 
-          <div className="flex flex-wrap gap-2 border-b px-4 py-3">
+              <div className="grid gap-2 rounded-[1.5rem] border bg-background/80 p-3 shadow-sm">
+                <label htmlFor="jobs-salary-max" className="text-sm font-medium">
+                  Salary max
+                </label>
+                <Input
+                  id="jobs-salary-max"
+                  name="salaryMax"
+                  defaultValue={filters.salaryMax}
+                  placeholder="7000"
+                  type="number"
+                />
+              </div>
+
+              <FilterSelect
+                defaultValue={filters.sort}
+                label="Sort by"
+                name="sort"
+                options={jobListSortOptions.map((value) => ({
+                  label: formatSortLabel(value),
+                  value,
+                }))}
+              />
+
+              <div className="flex items-end gap-2 xl:col-span-4">
+                <button className={buttonVariants({ size: "lg" })} type="submit">
+                  Apply
+                </button>
+                {hasActiveFilters ? (
+                  <Link
+                    href="/jobs"
+                    className={buttonVariants({ size: "lg", variant: "outline" })}
+                  >
+                    <X data-icon="inline-start" />
+                    Reset
+                  </Link>
+                ) : null}
+              </div>
+            </form>
+          </div>
+
+          <div className="flex flex-wrap gap-2 border-b px-5 py-4">
             {quickFilterStatuses.map((chip) => {
               const href = buildJobsListHref(filters, {
                 status: chip.value,
@@ -305,11 +392,13 @@ export function JobsPageQuery({
 
           {jobs.length === 0 ? (
             <div className="flex flex-col items-start gap-4 px-5 py-10 text-sm text-muted-foreground">
-              <p>
+              <div className="rounded-[1.75rem] border border-dashed bg-muted/20 px-5 py-8">
+                <p className="max-w-xl leading-6">
                 {hasActiveFilters
                   ? "No jobs match the current filters. Adjust the search or reset the list."
                   : "No jobs yet. Create the first role to start building your pipeline."}
-              </p>
+                </p>
+              </div>
               {!hasActiveFilters ? (
                 <Link href="/jobs/new" className={buttonVariants({ variant: "outline" })}>
                   <Plus data-icon="inline-start" />
@@ -342,7 +431,7 @@ function FilterSelect({
   options: Array<{ label: string; value: string }>
 }) {
   return (
-    <div className="grid gap-2">
+    <div className="grid gap-2 rounded-[1.5rem] border bg-background/80 p-3 shadow-sm">
       <label htmlFor={name} className="text-sm font-medium">
         {label}
       </label>
@@ -369,7 +458,7 @@ function StatCard({
   value: string
 }) {
   return (
-    <article className="rounded-[1.5rem] border bg-background/80 p-4 shadow-[0_1px_0_color-mix(in_oklch,var(--color-foreground)_5%,transparent)]">
+    <article className="rounded-[1.6rem] border bg-background/80 p-4 shadow-[0_1px_0_color-mix(in_oklch,var(--color-foreground)_5%,transparent)] hover-lift">
       <div className="flex items-start justify-between gap-4">
         <div className="space-y-1">
           <p className="text-sm font-medium text-muted-foreground">{label}</p>
@@ -398,6 +487,10 @@ function buildJobsListHref(
     params.set("q", mergedFilters.q)
   }
 
+  if (mergedFilters.source) {
+    params.set("source", mergedFilters.source)
+  }
+
   if (mergedFilters.status !== "all") {
     params.set("status", mergedFilters.status)
   }
@@ -412,6 +505,22 @@ function buildJobsListHref(
 
   if (mergedFilters.sort !== "updated_desc") {
     params.set("sort", mergedFilters.sort)
+  }
+
+  if (mergedFilters.appliedFrom) {
+    params.set("appliedFrom", mergedFilters.appliedFrom)
+  }
+
+  if (mergedFilters.appliedTo) {
+    params.set("appliedTo", mergedFilters.appliedTo)
+  }
+
+  if (mergedFilters.salaryMin) {
+    params.set("salaryMin", mergedFilters.salaryMin)
+  }
+
+  if (mergedFilters.salaryMax) {
+    params.set("salaryMax", mergedFilters.salaryMax)
   }
 
   if (mergedFilters.view !== "table") {
@@ -445,4 +554,44 @@ function formatSortLabel(value: string) {
     default:
       return value
   }
+}
+
+function buildActiveFilterSummary(filters: JobListFilters) {
+  const items: Array<{ label: string; value: string }> = []
+
+  if (filters.q) {
+    items.push({ label: "Search", value: filters.q })
+  }
+
+  if (filters.source) {
+    items.push({ label: "Source", value: filters.source })
+  }
+
+  if (filters.status !== "all") {
+    items.push({ label: "Status", value: formatStatusLabel(filters.status) })
+  }
+
+  if (filters.priority !== "all") {
+    items.push({ label: "Priority", value: capitalize(filters.priority) })
+  }
+
+  if (filters.workMode !== "all") {
+    items.push({ label: "Work mode", value: capitalize(filters.workMode) })
+  }
+
+  if (filters.appliedFrom || filters.appliedTo) {
+    items.push({
+      label: "Applied",
+      value: [filters.appliedFrom || "start", filters.appliedTo || "today"].join(" -> "),
+    })
+  }
+
+  if (filters.salaryMin || filters.salaryMax) {
+    items.push({
+      label: "Salary",
+      value: [filters.salaryMin || "0", filters.salaryMax || "max"].join(" - "),
+    })
+  }
+
+  return items
 }

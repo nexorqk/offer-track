@@ -44,6 +44,7 @@ import {
   useValidatedNativeSubmit,
   zodFormResolver,
 } from "@/lib/forms/rhf-zod"
+import { cn } from "@/lib/utils"
 
 type ContactFormValues = z.input<typeof contactFormSchema>
 type InterviewFormValues = z.input<typeof interviewFormSchema>
@@ -118,8 +119,10 @@ function ContactPanel({
 
   return (
     <WorkflowCard
+      count={contacts.length}
       description="Add the recruiter, hiring manager, or anyone tied to this opening."
       icon={UserRoundPlus}
+      tone="contacts"
       title="Contacts"
     >
       <WorkflowForm
@@ -186,7 +189,7 @@ function ContactPanel({
           <EmptyState>No contacts yet for this role.</EmptyState>
         ) : (
           contacts.map((contact) => (
-            <div key={contact.id} className="rounded-[1.25rem] border bg-muted/15 p-4">
+            <WorkflowListCard key={contact.id} tone="contacts">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="flex flex-col gap-1">
                   <strong className="text-sm font-semibold">{contact.name}</strong>
@@ -194,18 +197,36 @@ function ContactPanel({
                     {contact.role ?? "Role not specified"}
                   </span>
                 </div>
-                <span className="text-xs text-muted-foreground">
+                <span className="rounded-full border bg-background/70 px-2.5 py-1 text-xs text-muted-foreground">
                   {formatShortDate(contact.createdAt)}
                 </span>
               </div>
-              <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
-                {contact.email ? <span>{contact.email}</span> : null}
-                {contact.linkedinUrl ? <span>{contact.linkedinUrl}</span> : null}
+
+              <div className="mt-3 flex flex-wrap gap-2 text-sm text-muted-foreground">
+                {contact.email ? (
+                  <a
+                    href={`mailto:${contact.email}`}
+                    className="rounded-full border bg-background/70 px-3 py-1.5 hover:bg-muted/60"
+                  >
+                    {contact.email}
+                  </a>
+                ) : null}
+                {contact.linkedinUrl ? (
+                  <a
+                    href={contact.linkedinUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="rounded-full border bg-background/70 px-3 py-1.5 hover:bg-muted/60"
+                  >
+                    LinkedIn
+                  </a>
+                ) : null}
               </div>
+
               {contact.notes ? (
-                <p className="mt-3 text-sm text-muted-foreground">{contact.notes}</p>
+                <p className="mt-3 text-sm leading-6 text-muted-foreground">{contact.notes}</p>
               ) : null}
-            </div>
+            </WorkflowListCard>
           ))
         )}
       </div>
@@ -246,8 +267,10 @@ function InterviewPanel({
 
   return (
     <WorkflowCard
+      count={interviews.length}
       description="Keep every screen, panel, and final loop tied directly to the role."
       icon={CalendarClock}
+      tone="interviews"
       title="Interviews"
     >
       <WorkflowForm
@@ -330,36 +353,48 @@ function InterviewPanel({
           <EmptyState>No interviews scheduled for this role yet.</EmptyState>
         ) : (
           interviews.map((interview) => (
-            <div key={interview.id} className="rounded-[1.25rem] border bg-muted/15 p-4">
+            <WorkflowListCard key={interview.id} tone="interviews">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="flex flex-col gap-1">
-                  <strong className="text-sm font-semibold">
-                    {formatInterviewType(interview.type)} interview
-                  </strong>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <strong className="text-sm font-semibold">
+                      {formatInterviewType(interview.type)} interview
+                    </strong>
+                    <span className="rounded-full border bg-background/70 px-2.5 py-1 text-[0.68rem] font-medium uppercase tracking-[0.16em] text-muted-foreground">
+                      {formatDateTime(interview.scheduledAt)}
+                    </span>
+                  </div>
                   <span className="text-sm text-muted-foreground">
-                    {formatDateTime(interview.scheduledAt)}
+                    {formatInterviewType(interview.type)} interview
+                    {interview.location ? ` · ${interview.location}` : ""}
                   </span>
                 </div>
                 {interview.result ? (
-                  <span className="rounded-full border px-2 py-1 text-[0.68rem] font-medium uppercase tracking-[0.16em] text-muted-foreground">
+                  <span className="rounded-full border bg-background/70 px-2 py-1 text-[0.68rem] font-medium uppercase tracking-[0.16em] text-muted-foreground">
                     {interview.result}
                   </span>
                 ) : null}
               </div>
 
-              <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
+              <div className="mt-3 flex flex-wrap gap-2 text-sm text-muted-foreground">
                 {interview.durationMinutes ? (
-                  <span>{interview.durationMinutes} min</span>
+                  <span className="rounded-full border bg-background/70 px-3 py-1.5">
+                    {interview.durationMinutes} min
+                  </span>
                 ) : null}
-                {interview.location ? <span>{interview.location}</span> : null}
+                {interview.location ? (
+                  <span className="rounded-full border bg-background/70 px-3 py-1.5">
+                    {interview.location}
+                  </span>
+                ) : null}
               </div>
 
               {interview.notes ? (
-                <p className="mt-3 text-sm text-muted-foreground">
+                <p className="mt-3 text-sm leading-6 text-muted-foreground">
                   {interview.notes}
                 </p>
               ) : null}
-            </div>
+            </WorkflowListCard>
           ))
         )}
       </div>
@@ -390,8 +425,10 @@ function TaskPanel({
 
   return (
     <WorkflowCard
+      count={tasks.length}
       description="Capture the next follow-up before the thread goes stale."
       icon={CalendarPlus2}
+      tone="tasks"
       title="Follow-up tasks"
     >
       <WorkflowForm
@@ -431,7 +468,7 @@ function TaskPanel({
           <EmptyState>No follow-up tasks yet.</EmptyState>
         ) : (
           tasks.map((task) => (
-            <div key={task.id} className="rounded-[1.25rem] border bg-muted/15 p-4">
+            <WorkflowListCard key={task.id} tone="tasks">
               <div className="flex items-start justify-between gap-3">
                 <div className="flex flex-col gap-1">
                   <strong className="text-sm font-semibold">{task.title}</strong>
@@ -441,11 +478,30 @@ function TaskPanel({
                       : "No deadline yet"}
                   </span>
                 </div>
-                <span className="rounded-full border px-2 py-1 text-[0.68rem] font-medium uppercase tracking-[0.16em] text-muted-foreground">
-                  {task.completed ? "Done" : "Open"}
+                <span
+                  className={cn(
+                    "rounded-full border px-2 py-1 text-[0.68rem] font-medium uppercase tracking-[0.16em]",
+                    task.completed
+                      ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+                      : task.dueDate && task.dueDate.getTime() < Date.now()
+                        ? "border-rose-500/20 bg-rose-500/10 text-rose-700 dark:text-rose-300"
+                        : "bg-background/70 text-muted-foreground",
+                  )}
+                >
+                  {task.completed
+                    ? "Done"
+                    : task.dueDate && task.dueDate.getTime() < Date.now()
+                      ? "Overdue"
+                      : "Open"}
                 </span>
               </div>
-            </div>
+
+              <div className="mt-3 flex flex-wrap gap-2 text-xs text-muted-foreground">
+                <span className="rounded-full border bg-background/70 px-3 py-1.5">
+                  Added {formatShortDate(task.createdAt)}
+                </span>
+              </div>
+            </WorkflowListCard>
           ))
         )}
       </div>
@@ -464,12 +520,22 @@ function NotePanel({
     createJobNoteAction,
     initialJobNoteState,
   )
+  const {
+    draft,
+    draftStatus,
+    setDraft,
+  } = useAutosavedNoteDraft({
+    isSaved: state.status === "success",
+    jobId,
+  })
   useRefreshOnSuccess(state.status)
 
   return (
     <WorkflowCard
+      count={notes.length}
       description="Log the signal right after a call while it is still fresh."
       icon={NotebookText}
+      tone="notes"
       title="Notes"
     >
       <WorkflowForm
@@ -487,10 +553,13 @@ function NotePanel({
             name="content"
             className={textareaClassName}
             placeholder="Candidate signal, prep notes, post-interview takeaways."
+            value={draft}
+            onChange={(event) => setDraft(event.target.value)}
           />
           <FieldError error={getFieldError(state, "content")} />
         </div>
 
+        <DraftStateMessage draft={draft} status={draftStatus} />
         <FormStateMessage state={state} />
 
         <Button type="submit" disabled={isPending}>
@@ -503,15 +572,15 @@ function NotePanel({
           <EmptyState>No notes yet for this opportunity.</EmptyState>
         ) : (
           notes.map((note) => (
-            <div key={note.id} className="rounded-[1.25rem] border bg-muted/15 p-4">
+            <WorkflowListCard key={note.id} tone="notes">
               <div className="mb-2 flex items-center justify-between gap-3">
                 <strong className="text-sm font-semibold">Job note</strong>
-                <span className="text-xs text-muted-foreground">
+                <span className="rounded-full border bg-background/70 px-2.5 py-1 text-xs text-muted-foreground">
                   {formatDateTime(note.updatedAt)}
                 </span>
               </div>
               <p className="text-sm leading-6 text-muted-foreground">{note.content}</p>
-            </div>
+            </WorkflowListCard>
           ))
         )}
       </div>
@@ -521,28 +590,39 @@ function NotePanel({
 
 function WorkflowCard({
   children,
+  count,
   description,
   icon: Icon,
+  tone,
   title,
 }: Readonly<{
   children: React.ReactNode
+  count: number
   description: string
   icon: React.ComponentType<{ className?: string }>
+  tone: WorkflowTone
   title: string
 }>) {
+  const styles = getWorkflowToneStyles(tone)
+
   return (
-    <article className="rounded-[2rem] border bg-background/92 p-5 shadow-sm">
+    <article className={cn("rounded-[2rem] border p-5 shadow-sm surface-enter", styles.surface)}>
       <div className="flex items-start justify-between gap-3 border-b pb-4">
         <div className="flex flex-col gap-1">
-          <span className="text-[0.68rem] font-medium uppercase tracking-[0.28em] text-muted-foreground">
-            Workflow
-          </span>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="eyebrow-label">
+              Workflow
+            </span>
+            <span className={cn("rounded-full px-2.5 py-1 text-[0.68rem] font-medium uppercase tracking-[0.16em]", styles.badge)}>
+              {count} {count === 1 ? "item" : "items"}
+            </span>
+          </div>
           <h2 className="text-xl font-semibold tracking-tight">{title}</h2>
           <p className="max-w-xl text-sm leading-6 text-muted-foreground">
             {description}
           </p>
         </div>
-        <div className="flex size-10 items-center justify-center rounded-2xl bg-secondary text-secondary-foreground">
+        <div className={cn("flex size-10 items-center justify-center rounded-2xl", styles.icon)}>
           <Icon className="size-4" />
         </div>
       </div>
@@ -583,14 +663,16 @@ function WorkflowForm({
     <form
       ref={formRef}
       action={action}
-      className="grid gap-4"
+      className="grid gap-4 rounded-[1.5rem] border bg-background/70 p-4"
       noValidate={noValidate}
       onSubmit={onSubmit}
     >
       <input type="hidden" name="jobId" value={jobId} />
       {children}
       {isPending ? (
-        <span className="text-xs text-muted-foreground">Submitting...</span>
+        <span className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+          Submitting...
+        </span>
       ) : null}
     </form>
   )
@@ -705,12 +787,42 @@ function FormStateMessage<FieldName extends string>({
   )
 }
 
+function DraftStateMessage({
+  draft,
+  status,
+}: Readonly<{
+  draft: string
+  status: "idle" | "saved" | "saving"
+}>) {
+  if (!draft.trim()) {
+    return null
+  }
+
+  return (
+    <div className="rounded-full border bg-background/70 px-3 py-1.5 text-xs text-muted-foreground">
+      {status === "saving" ? "Autosaving draft..." : "Draft autosaved locally."}
+    </div>
+  )
+}
+
 function EmptyState({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <div className="rounded-[1.25rem] border border-dashed px-4 py-8 text-center text-sm text-muted-foreground">
+    <div className="rounded-[1.35rem] border border-dashed bg-background/60 px-4 py-8 text-center text-sm text-muted-foreground">
       {children}
     </div>
   )
+}
+
+function WorkflowListCard({
+  children,
+  tone,
+}: Readonly<{
+  children: React.ReactNode
+  tone: WorkflowTone
+}>) {
+  const styles = getWorkflowToneStyles(tone)
+
+  return <div className={cn("rounded-[1.35rem] border p-4 hover-lift", styles.listCard)}>{children}</div>
 }
 
 function getFieldError<FieldName extends string>(
@@ -755,6 +867,85 @@ function useRefreshOnSuccess(status: JobDetailMutationState<string>["status"]) {
 
     router.refresh()
   }, [router, status])
+}
+
+function useAutosavedNoteDraft({
+  isSaved,
+  jobId,
+}: {
+  isSaved: boolean
+  jobId: string
+}) {
+  const storageKey = React.useMemo(() => buildJobNoteDraftStorageKey(jobId), [jobId])
+  const saveTimeoutRef = React.useRef<number | null>(null)
+  const [draft, setDraft] = React.useState("")
+  const [draftStatus, setDraftStatus] = React.useState<"idle" | "saved" | "saving">(
+    "idle",
+  )
+  const [isReady, setIsReady] = React.useState(false)
+
+  React.useEffect(() => {
+    const savedDraft = window.localStorage.getItem(storageKey) ?? ""
+
+    setDraft(savedDraft)
+    setDraftStatus(savedDraft ? "saved" : "idle")
+    setIsReady(true)
+  }, [storageKey])
+
+  React.useEffect(() => {
+    if (!isReady) {
+      return
+    }
+
+    if (saveTimeoutRef.current !== null) {
+      window.clearTimeout(saveTimeoutRef.current)
+    }
+
+    if (!draft.trim()) {
+      window.localStorage.removeItem(storageKey)
+      setDraftStatus("idle")
+      saveTimeoutRef.current = null
+      return
+    }
+
+    setDraftStatus("saving")
+    saveTimeoutRef.current = window.setTimeout(() => {
+      window.localStorage.setItem(storageKey, draft)
+      setDraftStatus("saved")
+      saveTimeoutRef.current = null
+    }, 600)
+
+    return () => {
+      if (saveTimeoutRef.current !== null) {
+        window.clearTimeout(saveTimeoutRef.current)
+      }
+    }
+  }, [draft, isReady, storageKey])
+
+  React.useEffect(() => {
+    if (!isSaved) {
+      return
+    }
+
+    if (saveTimeoutRef.current !== null) {
+      window.clearTimeout(saveTimeoutRef.current)
+      saveTimeoutRef.current = null
+    }
+
+    window.localStorage.removeItem(storageKey)
+    setDraft("")
+    setDraftStatus("idle")
+  }, [isSaved, storageKey])
+
+  return {
+    draft,
+    draftStatus,
+    setDraft,
+  }
+}
+
+function buildJobNoteDraftStorageKey(jobId: string) {
+  return `offer-track:job-note-draft:${jobId}`
 }
 
 function useWorkflowSchemaForm<
@@ -822,6 +1013,49 @@ function formatInterviewType(value: "final" | "hr" | "technical") {
       return "Technical"
     case "final":
       return "Final"
+  }
+}
+
+type WorkflowTone = "contacts" | "interviews" | "tasks" | "notes"
+
+function getWorkflowToneStyles(tone: WorkflowTone) {
+  switch (tone) {
+    case "contacts":
+      return {
+        badge: "bg-amber-500/12 text-amber-700 dark:text-amber-300",
+        icon: "bg-amber-500/12 text-amber-700 dark:text-amber-300",
+        listCard:
+          "bg-[linear-gradient(180deg,color-mix(in_oklch,var(--color-background)_92%,transparent),color-mix(in_oklch,oklch(0.82_0.12_85)_12%,transparent))]",
+        surface:
+          "bg-[radial-gradient(circle_at_top_left,color-mix(in_oklch,oklch(0.82_0.12_85)_12%,transparent),transparent_42%),linear-gradient(180deg,color-mix(in_oklch,var(--color-background)_92%,transparent),color-mix(in_oklch,var(--color-muted)_18%,transparent))]",
+      }
+    case "interviews":
+      return {
+        badge: "bg-cyan-500/12 text-cyan-700 dark:text-cyan-300",
+        icon: "bg-cyan-500/12 text-cyan-700 dark:text-cyan-300",
+        listCard:
+          "bg-[linear-gradient(180deg,color-mix(in_oklch,var(--color-background)_92%,transparent),color-mix(in_oklch,oklch(0.76_0.11_235)_12%,transparent))]",
+        surface:
+          "bg-[radial-gradient(circle_at_top_left,color-mix(in_oklch,oklch(0.76_0.11_235)_12%,transparent),transparent_42%),linear-gradient(180deg,color-mix(in_oklch,var(--color-background)_92%,transparent),color-mix(in_oklch,var(--color-muted)_18%,transparent))]",
+      }
+    case "tasks":
+      return {
+        badge: "bg-rose-500/12 text-rose-700 dark:text-rose-300",
+        icon: "bg-rose-500/12 text-rose-700 dark:text-rose-300",
+        listCard:
+          "bg-[linear-gradient(180deg,color-mix(in_oklch,var(--color-background)_92%,transparent),color-mix(in_oklch,oklch(0.72_0.16_20)_12%,transparent))]",
+        surface:
+          "bg-[radial-gradient(circle_at_top_left,color-mix(in_oklch,oklch(0.72_0.16_20)_12%,transparent),transparent_42%),linear-gradient(180deg,color-mix(in_oklch,var(--color-background)_92%,transparent),color-mix(in_oklch,var(--color-muted)_18%,transparent))]",
+      }
+    case "notes":
+      return {
+        badge: "bg-emerald-500/12 text-emerald-700 dark:text-emerald-300",
+        icon: "bg-emerald-500/12 text-emerald-700 dark:text-emerald-300",
+        listCard:
+          "bg-[linear-gradient(180deg,color-mix(in_oklch,var(--color-background)_92%,transparent),color-mix(in_oklch,oklch(0.8_0.16_155)_12%,transparent))]",
+        surface:
+          "bg-[radial-gradient(circle_at_top_left,color-mix(in_oklch,oklch(0.8_0.16_155)_12%,transparent),transparent_42%),linear-gradient(180deg,color-mix(in_oklch,var(--color-background)_92%,transparent),color-mix(in_oklch,var(--color-muted)_18%,transparent))]",
+      }
   }
 }
 

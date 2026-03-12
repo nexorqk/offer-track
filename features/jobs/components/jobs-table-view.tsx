@@ -126,12 +126,18 @@ export function JobsTableView({
   }
 
   return (
-    <div className="grid gap-4 p-4">
+    <div className="grid gap-4 p-4 surface-enter surface-enter-delay-3">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <p className="text-sm text-muted-foreground">
-          Showing {rangeStart + 1}-{Math.min(rangeStart + PAGE_SIZE, jobs.length)} of {jobs.length}{" "}
-          roles.
-        </p>
+        <div className="flex flex-col gap-1">
+          <p className="text-sm text-muted-foreground">
+            Showing {rangeStart + 1}-{Math.min(rangeStart + PAGE_SIZE, jobs.length)} of {jobs.length}{" "}
+            roles.
+          </p>
+          <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+            {visibleColumns.length} optional columns visible
+          </p>
+        </div>
+
         <div className="relative flex items-center gap-2 self-start">
           <button
             type="button"
@@ -147,12 +153,17 @@ export function JobsTableView({
           {isColumnPanelOpen ? (
             <div
               id="jobs-table-columns"
-              className="absolute right-0 top-full z-10 mt-2 grid min-w-52 gap-2 rounded-[1.25rem] border bg-background p-3 shadow-lg"
+              className="absolute right-0 top-full z-10 mt-2 grid min-w-56 gap-2 rounded-[1.25rem] border bg-background/95 p-3 shadow-lg backdrop-blur"
             >
+              <div className="mb-1">
+                <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
+                  Visible columns
+                </p>
+              </div>
               {optionalColumns.map((column) => (
                 <label
                   key={column.id}
-                  className="flex items-center gap-2 text-sm text-foreground"
+                  className="flex items-center gap-2 rounded-xl px-2 py-1.5 text-sm text-foreground hover:bg-muted/40"
                 >
                   <input
                     type="checkbox"
@@ -167,7 +178,7 @@ export function JobsTableView({
         </div>
       </div>
 
-      <div className="overflow-x-auto rounded-[1.75rem] border bg-background/90">
+      <div className="overflow-x-auto rounded-[1.9rem] border bg-[linear-gradient(180deg,color-mix(in_oklch,var(--color-background)_94%,transparent),color-mix(in_oklch,var(--color-muted)_12%,transparent))] shadow-sm">
         <table className="min-w-full border-separate border-spacing-0 text-sm">
           <thead>
             <tr className="bg-muted/35 text-left">
@@ -180,18 +191,25 @@ export function JobsTableView({
           </thead>
           <tbody>
             {paginatedJobs.map((job) => (
-              <tr key={job.id} className="align-top transition-colors hover:bg-muted/20">
+              <tr
+                key={job.id}
+                className="align-top transition-colors odd:bg-background/70 hover:bg-muted/20"
+              >
                 <TableCell className="min-w-56">
                   <div className="flex min-w-0 flex-col gap-1">
+                    <span className="text-[0.68rem] font-medium uppercase tracking-[0.18em] text-muted-foreground">
+                      {job.companyName}
+                    </span>
                     <Link
                       href={`/jobs/${job.id}`}
                       className="font-medium text-foreground underline-offset-4 hover:underline"
                     >
                       {job.title}
                     </Link>
-                    <span className="text-xs text-muted-foreground">
-                      {job.location ?? "Location not set"}
-                    </span>
+                    <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+                      <span>{job.location ?? "Location not set"}</span>
+                      {job.workMode ? <span>{capitalize(job.workMode)}</span> : null}
+                    </div>
                   </div>
                 </TableCell>
                 {visibleColumns.map((column) => (
@@ -254,7 +272,7 @@ function TableHeaderCell({
     <th
       scope="col"
       className={cn(
-        "border-b px-4 py-3 text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground first:rounded-tl-[1.75rem] last:rounded-tr-[1.75rem]",
+        "sticky top-0 border-b bg-muted/35 px-4 py-3 text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground first:rounded-tl-[1.75rem] last:rounded-tr-[1.75rem]",
         className,
       )}
     >
@@ -271,7 +289,7 @@ function TableCell({
   className?: string
 }>) {
   return (
-    <td className={cn("border-b px-4 py-4 text-sm text-muted-foreground last:border-b-0", className)}>
+    <td className={cn("border-b px-4 py-4 text-sm text-muted-foreground", className)}>
       {children}
     </td>
   )

@@ -1,6 +1,6 @@
 "use server"
 
-import { and, eq, sql } from "drizzle-orm"
+import { and, eq } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
 import { z, type ZodError } from "zod"
@@ -86,12 +86,7 @@ async function resolveCompanyId(userId: string, companyName: string) {
       id: companies.id,
     })
     .from(companies)
-    .where(
-      and(
-        eq(companies.userId, userId),
-        sql`lower(${companies.name}) = ${normalizedName}`,
-      ),
-    )
+    .where(and(eq(companies.userId, userId), eq(companies.nameKey, normalizedName)))
     .limit(1)
 
   if (existingCompany) {
@@ -102,6 +97,7 @@ async function resolveCompanyId(userId: string, companyName: string) {
     .insert(companies)
     .values({
       name: companyName,
+      nameKey: normalizedName,
       userId,
     })
     .returning({
@@ -495,17 +491,6 @@ export async function updateJobAction(
     })
     .where(and(eq(jobs.id, jobId), eq(jobs.userId, user.id)))
 
-  const stageHistoryEntry = buildJobStageHistoryEntry({
-    changedAt: now,
-    jobId,
-    nextStatus: jobInput.status,
-    previousStatus: existingJob.status,
-  })
-
-  if (stageHistoryEntry) {
-    await db.insert(jobStageHistory).values(stageHistoryEntry)
-  }
-
   revalidatePath("/dashboard")
   revalidatePath("/jobs")
   revalidatePath(`/jobs/${jobId}`)
@@ -556,17 +541,6 @@ export async function updateJobStatusAction(input: {
       updatedAt: now,
     })
     .where(and(eq(jobs.id, parsed.data.jobId), eq(jobs.userId, user.id)))
-
-  const stageHistoryEntry = buildJobStageHistoryEntry({
-    changedAt: now,
-    jobId: parsed.data.jobId,
-    nextStatus: parsed.data.status,
-    previousStatus: existingJob.status,
-  })
-
-  if (stageHistoryEntry) {
-    await db.insert(jobStageHistory).values(stageHistoryEntry)
-  }
 
   revalidatePath("/dashboard")
   revalidatePath("/jobs")

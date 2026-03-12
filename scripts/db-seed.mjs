@@ -95,6 +95,7 @@ async function main() {
         { column: "id", key: "id" },
         { column: "user_id", key: "userId" },
         { column: "name", key: "name" },
+        { column: "name_key", key: "nameKey" },
         { column: "website", key: "website" },
         { column: "location", key: "location" },
         { column: "industry", key: "industry" },

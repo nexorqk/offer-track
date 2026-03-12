@@ -20,9 +20,14 @@ export const jobListPriorityOptions = ["all", ...jobPriorityOptions] as const
 export const jobListWorkModeOptions = ["all", ...workModeOptions] as const
 
 export const defaultJobListFilters = {
+  appliedFrom: "",
+  appliedTo: "",
   priority: "all",
   q: "",
+  salaryMax: "",
+  salaryMin: "",
   sort: "updated_desc",
+  source: "",
   status: "all",
   view: "table",
   workMode: "all",
@@ -33,10 +38,36 @@ const searchParamValue = z
   .transform((value) => value.trim())
   .catch(defaultJobListFilters.q)
 
+const dateParamValue = z
+  .string()
+  .transform((value) => value.trim())
+  .refine(
+    (value) =>
+      value.length === 0 ||
+      (/^\d{4}-\d{2}-\d{2}$/.test(value) &&
+        !Number.isNaN(new Date(`${value}T00:00:00.000Z`).getTime())),
+    "Enter a valid date",
+  )
+  .catch("")
+
+const nonNegativeIntegerParamValue = z
+  .string()
+  .transform((value) => value.trim())
+  .refine(
+    (value) => value.length === 0 || /^[0-9]+$/.test(value),
+    "Enter a whole number",
+  )
+  .catch("")
+
 export const jobListFiltersSchema = z.object({
+  appliedFrom: dateParamValue,
+  appliedTo: dateParamValue,
   priority: z.enum(jobListPriorityOptions).catch(defaultJobListFilters.priority),
   q: searchParamValue,
+  salaryMax: nonNegativeIntegerParamValue,
+  salaryMin: nonNegativeIntegerParamValue,
   sort: z.enum(jobListSortOptions).catch(defaultJobListFilters.sort),
+  source: searchParamValue,
   status: z.enum(jobListStatusOptions).catch(defaultJobListFilters.status),
   view: z
     .preprocess((value) => {
@@ -57,7 +88,12 @@ export function parseJobListFilters(
 
 export function hasActiveJobListFilters(filters: JobListFilters) {
   return (
+    filters.appliedFrom.length > 0 ||
+    filters.appliedTo.length > 0 ||
     filters.q.length > 0 ||
+    filters.salaryMax.length > 0 ||
+    filters.salaryMin.length > 0 ||
+    filters.source.length > 0 ||
     filters.priority !== defaultJobListFilters.priority ||
     filters.sort !== defaultJobListFilters.sort ||
     filters.status !== defaultJobListFilters.status ||

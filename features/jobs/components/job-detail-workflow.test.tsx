@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react"
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
@@ -34,6 +34,7 @@ vi.mock("@/features/jobs/server/actions", () => ({
 
 describe("JobDetailWorkflow", () => {
   beforeEach(() => {
+    window.localStorage.clear()
     actionMocks.createJobContactAction.mockClear()
     actionMocks.createJobInterviewAction.mockClear()
     actionMocks.createJobNoteAction.mockClear()
@@ -148,5 +149,48 @@ describe("JobDetailWorkflow", () => {
     expect(submittedFormData.get("jobId")).toBe("job-1")
     expect(submittedFormData.get("name")).toBe("Jane Recruiter")
     expect(submittedFormData.get("email")).toBe("jane@company.com")
+  })
+
+  it("restores an autosaved note draft after remount", async () => {
+    vi.useFakeTimers()
+
+    const { unmount } = render(
+      <JobDetailWorkflow
+        contacts={[]}
+        interviews={[]}
+        jobId="job-1"
+        notes={[]}
+        tasks={[]}
+      />,
+    )
+
+    fireEvent.change(screen.getByLabelText("New note"), {
+      target: {
+        value: "Remember comp band and panel names",
+      },
+    })
+    act(() => {
+      vi.advanceTimersByTime(800)
+    })
+
+    unmount()
+
+    render(
+      <JobDetailWorkflow
+        contacts={[]}
+        interviews={[]}
+        jobId="job-1"
+        notes={[]}
+        tasks={[]}
+      />,
+    )
+
+    vi.useRealTimers()
+
+    await waitFor(() =>
+      expect(screen.getByLabelText("New note")).toHaveValue(
+        "Remember comp band and panel names",
+      ),
+    )
   })
 })

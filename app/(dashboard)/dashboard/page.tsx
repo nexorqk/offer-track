@@ -23,8 +23,9 @@ export default async function DashboardPage() {
         </div>
       </section>
 
-      <div className="text-xs text-muted-foreground">
-        Press <kbd>d</kbd> to toggle dark mode.
+      <div className="inline-flex self-start rounded-full border bg-background/80 px-3 py-1.5 text-xs text-muted-foreground shadow-sm">
+        Press <kbd className="mx-1 rounded-md border bg-muted px-1.5 py-0.5 font-medium text-foreground">d</kbd>
+        to toggle dark mode.
       </div>
     </div>
   )

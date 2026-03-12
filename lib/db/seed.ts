@@ -45,6 +45,7 @@ export type SeedPlan = {
     id: string
     userId: string
     name: string
+    nameKey: string
     website: string
     location: string
     industry: string
@@ -180,6 +181,7 @@ export async function buildSeedPlan(): Promise<SeedPlan> {
         id: ids.companyAtlas,
         userId: DEMO_SEED_USER_ID,
         name: "Atlas Labs",
+        nameKey: "atlas labs",
         website: "https://atlaslabs.dev",
         location: "Berlin, Germany",
         industry: "Developer tooling",
@@ -191,6 +193,7 @@ export async function buildSeedPlan(): Promise<SeedPlan> {
         id: ids.companyNorthstar,
         userId: DEMO_SEED_USER_ID,
         name: "Northstar Health",
+        nameKey: "northstar health",
         website: "https://northstar.health",
         location: "Warsaw, Poland",
         industry: "Healthtech",
@@ -202,6 +205,7 @@ export async function buildSeedPlan(): Promise<SeedPlan> {
         id: ids.companySignal,
         userId: DEMO_SEED_USER_ID,
         name: "Signal Forge",
+        nameKey: "signal forge",
         website: "https://signalforge.com",
         location: "Remote, EU",
         industry: "B2B SaaS",

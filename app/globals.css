@@ -132,3 +132,34 @@
     @apply font-sans;
   }
 }
+
+@layer utilities {
+  .surface-enter {
+    @apply motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-4 motion-safe:duration-500;
+    animation-fill-mode: both;
+  }
+
+  .surface-enter-delay-1 {
+    animation-delay: 90ms;
+  }
+
+  .surface-enter-delay-2 {
+    animation-delay: 160ms;
+  }
+
+  .surface-enter-delay-3 {
+    animation-delay: 240ms;
+  }
+
+  .surface-enter-delay-4 {
+    animation-delay: 320ms;
+  }
+
+  .hover-lift {
+    @apply transition-transform duration-200 ease-out hover:-translate-y-0.5;
+  }
+
+  .eyebrow-label {
+    @apply text-[0.68rem] font-medium uppercase tracking-[0.28em] text-muted-foreground;
+  }
+}
