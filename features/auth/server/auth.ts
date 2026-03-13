@@ -18,6 +18,18 @@ export type SessionUser = {
   email: string
 }
 
+async function ensureUserProfile(user: SessionUser) {
+  await withDatabaseRetry(() =>
+    db
+      .insert(profiles)
+      .values({
+        email: user.email,
+        id: user.id,
+      })
+      .onConflictDoNothing()
+  )
+}
+
 function createSessionToken() {
   return randomBytes(32).toString("base64url")
 }
@@ -103,9 +115,11 @@ export const getCurrentUser = cache(async function getCurrentUser() {
       .select({
         id: users.id,
         email: users.email,
+        profileId: profiles.id,
       })
       .from(sessions)
       .innerJoin(users, eq(sessions.userId, users.id))
+      .leftJoin(profiles, eq(users.id, profiles.id))
       .where(
         and(
           eq(sessions.sessionTokenHash, hashSessionToken(sessionToken)),
@@ -120,7 +134,16 @@ export const getCurrentUser = cache(async function getCurrentUser() {
     return null
   }
 
-  return result
+  const user = {
+    email: result.email,
+    id: result.id,
+  }
+
+  if (!result.profileId) {
+    await ensureUserProfile(user)
+  }
+
+  return user
 })
 
 export async function requireCurrentUser() {

@@ -151,6 +151,33 @@ describe("JobDetailWorkflow", () => {
     expect(submittedFormData.get("email")).toBe("jane@company.com")
   })
 
+  it("shows a toast after a successful contact save", async () => {
+    const user = userEvent.setup()
+
+    actionMocks.createJobContactAction.mockResolvedValueOnce({
+      message: "Recruiter contact added.",
+      status: "success",
+    })
+
+    render(
+      <JobDetailWorkflow
+        contacts={[]}
+        interviews={[]}
+        jobId="job-1"
+        notes={[]}
+        tasks={[]}
+      />,
+    )
+
+    await user.type(screen.getByLabelText("Name"), "Jane Recruiter")
+    await user.type(screen.getByLabelText("Email"), "jane@company.com")
+    await user.click(screen.getByRole("button", { name: "Add contact" }))
+
+    await waitFor(() =>
+      expect(screen.getByText("Recruiter contact added.")).toBeInTheDocument(),
+    )
+  })
+
   it("restores an autosaved note draft after remount", async () => {
     vi.useFakeTimers()
 

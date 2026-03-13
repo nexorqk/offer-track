@@ -39,7 +39,7 @@ export function DashboardOverdueTasks({
         </div>
       ) : (
         <div className="mt-4 flex flex-col gap-3">
-          {items.map((item) => (
+          {items.map((item, index) => (
             <article
               key={item.id}
               className="rounded-[1.5rem] border bg-background/80 p-4 shadow-[0_1px_0_color-mix(in_oklch,var(--color-foreground)_5%,transparent)] surface-enter hover-lift"

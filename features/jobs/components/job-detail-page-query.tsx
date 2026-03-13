@@ -15,7 +15,11 @@ import {
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 
 import { Button } from "@/components/ui/button"
+import { ConfirmDialog } from "@/components/ui/confirm-dialog"
 import { JobForm } from "@/features/jobs/components/job-form"
+import {
+  JobStatusBadge,
+} from "@/features/jobs/components/job-status-badge"
 import {
   deleteJobAction,
   updateJobAction,
@@ -96,25 +100,7 @@ export function JobDetailPageQuery({
         <div className="grid gap-5 self-start">
           <JobTimelineCard history={job.history} />
 
-          <article className="rounded-[2rem] border bg-[radial-gradient(circle_at_top_right,color-mix(in_oklch,var(--color-destructive)_10%,transparent),transparent_42%),linear-gradient(180deg,color-mix(in_oklch,var(--color-background)_92%,transparent),color-mix(in_oklch,var(--color-muted)_22%,transparent))] p-5 shadow-sm surface-enter surface-enter-delay-4">
-            <div className="flex flex-col gap-2">
-              <span className="text-[0.68rem] font-medium uppercase tracking-[0.28em] text-muted-foreground">
-                Dangerous action
-              </span>
-              <h2 className="text-xl font-semibold tracking-tight">Delete job</h2>
-              <p className="text-sm leading-6 text-muted-foreground">
-                Removing a job also removes its stage history, linked notes, interviews, and tasks through database cascades.
-              </p>
-            </div>
-
-            <form action={deleteJobAction} className="mt-5">
-              <input type="hidden" name="jobId" value={formValues.id} />
-              <Button type="submit" size="lg" variant="destructive">
-                <Trash2 data-icon="inline-start" />
-                Delete job
-              </Button>
-            </form>
-          </article>
+          <DeleteJobDangerCard jobId={formValues.id} />
         </div>
       </div>
     </div>
@@ -137,7 +123,7 @@ function JobHeaderCard({
               <span className="eyebrow-label">
                 Job header
               </span>
-              <StatusBadge status={formValues.status} />
+              <JobStatusBadge status={formValues.status} />
             </div>
 
             <div className="flex flex-col gap-2">
@@ -273,11 +259,21 @@ function JobTimelineCard({
             />
 
             <div className="flex items-center justify-between gap-3">
-              <strong className="text-sm font-medium">
-                {entry.fromStatus
-                  ? `${formatStatus(entry.fromStatus)} -> ${formatStatus(entry.toStatus)}`
-                  : `Entered as ${formatStatus(entry.toStatus)}`}
-              </strong>
+              <div className="flex flex-wrap items-center gap-2">
+                {entry.fromStatus ? (
+                  <>
+                    <JobStatusBadge status={entry.fromStatus} />
+                    <span className="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">
+                      to
+                    </span>
+                  </>
+                ) : (
+                  <span className="text-sm font-medium text-foreground">
+                    Entered as
+                  </span>
+                )}
+                <JobStatusBadge status={entry.toStatus} />
+              </div>
               <span className="rounded-full border bg-background/80 px-2.5 py-1 text-xs text-muted-foreground">
                 {formatDateTime(entry.changedAt)}
               </span>
@@ -286,6 +282,70 @@ function JobTimelineCard({
         ))}
       </div>
     </article>
+  )
+}
+
+function DeleteJobDangerCard({
+  jobId,
+}: Readonly<{
+  jobId: string
+}>) {
+  const formRef = React.useRef<HTMLFormElement>(null)
+  const [isConfirmOpen, setIsConfirmOpen] = React.useState(false)
+  const [isDeleting, setIsDeleting] = React.useState(false)
+
+  function handleCancel() {
+    if (isDeleting) {
+      return
+    }
+
+    setIsConfirmOpen(false)
+  }
+
+  function handleConfirm() {
+    setIsDeleting(true)
+    formRef.current?.requestSubmit()
+  }
+
+  return (
+    <>
+      <article className="rounded-[2rem] border bg-[radial-gradient(circle_at_top_right,color-mix(in_oklch,var(--color-destructive)_10%,transparent),transparent_42%),linear-gradient(180deg,color-mix(in_oklch,var(--color-background)_92%,transparent),color-mix(in_oklch,var(--color-muted)_22%,transparent))] p-5 shadow-sm surface-enter surface-enter-delay-4">
+        <div className="flex flex-col gap-2">
+          <span className="text-[0.68rem] font-medium uppercase tracking-[0.28em] text-muted-foreground">
+            Dangerous action
+          </span>
+          <h2 className="text-xl font-semibold tracking-tight">Delete job</h2>
+          <p className="text-sm leading-6 text-muted-foreground">
+            Removing a job also removes its stage history, linked notes, interviews, and tasks through database cascades.
+          </p>
+        </div>
+
+        <form ref={formRef} action={deleteJobAction} className="mt-5">
+          <input type="hidden" name="jobId" value={jobId} />
+          <Button
+            type="button"
+            size="lg"
+            variant="destructive"
+            disabled={isDeleting}
+            onClick={() => setIsConfirmOpen(true)}
+          >
+            <Trash2 data-icon="inline-start" />
+            Delete job
+          </Button>
+        </form>
+      </article>
+
+      <ConfirmDialog
+        confirmLabel="Delete job"
+        description="This permanently removes the job, stage history, notes, interviews, and follow-up tasks."
+        isPending={isDeleting}
+        onCancel={handleCancel}
+        onConfirm={handleConfirm}
+        open={isConfirmOpen}
+        title="Delete this job?"
+        tone="destructive"
+      />
+    </>
   )
 }
 
@@ -315,48 +375,44 @@ function MetaPill({
   )
 }
 
-function StatusBadge({ status }: Readonly<{ status: string }>) {
-  const tone =
-    status === "offer"
-      ? "bg-emerald-500/12 text-emerald-700 dark:text-emerald-300"
-      : status === "rejected"
-        ? "bg-rose-500/12 text-rose-700 dark:text-rose-300"
-        : status === "technical" || status === "final"
-          ? "bg-cyan-500/12 text-cyan-700 dark:text-cyan-300"
-          : "bg-secondary text-secondary-foreground"
-
-  return (
-    <span className={cn("rounded-full px-2.5 py-1 text-[0.68rem] font-medium uppercase tracking-[0.18em]", tone)}>
-      {formatStatus(status)}
-    </span>
-  )
-}
-
-function formatStatus(value: string) {
-  if (value === "hr_screen") {
-    return "HR screen"
-  }
-
-  return value[0].toUpperCase() + value.slice(1)
-}
-
 function formatCompensation(
-  min?: number | null,
-  max?: number | null,
+  min?: number | string | null,
+  max?: number | string | null,
   currency?: string | null,
 ) {
+  const normalizedMin = normalizeCompensationValue(min)
+  const normalizedMax = normalizeCompensationValue(max)
   const prefix = currency ? `${currency} ` : "$"
 
-  if (min && max) {
-    return `${prefix}${min.toLocaleString()} - ${prefix}${max.toLocaleString()}`
+  if (normalizedMin !== null && normalizedMax !== null) {
+    return `${prefix}${normalizedMin.toLocaleString()} - ${prefix}${normalizedMax.toLocaleString()}`
   }
 
-  if (min) {
-    return `From ${prefix}${min.toLocaleString()}`
+  if (normalizedMin !== null) {
+    return `From ${prefix}${normalizedMin.toLocaleString()}`
   }
 
-  if (max) {
-    return `Up to ${prefix}${max.toLocaleString()}`
+  if (normalizedMax !== null) {
+    return `Up to ${prefix}${normalizedMax.toLocaleString()}`
+  }
+
+  return null
+}
+
+function normalizeCompensationValue(value?: number | string | null) {
+  if (typeof value === "number") {
+    return Number.isFinite(value) ? value : null
+  }
+
+  if (typeof value === "string") {
+    const normalized = value.trim()
+
+    if (!normalized) {
+      return null
+    }
+
+    const parsed = Number(normalized)
+    return Number.isFinite(parsed) ? parsed : null
   }
 
   return null

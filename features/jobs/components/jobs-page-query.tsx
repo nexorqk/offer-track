@@ -1,7 +1,9 @@
 "use client"
 
 import * as React from "react"
+import { startTransition } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import {
   ArrowUpDown,
   BriefcaseBusiness,
@@ -17,6 +19,7 @@ import { Input } from "@/components/ui/input"
 import { JobsKanbanBoard } from "@/features/jobs/components/jobs-kanban-board"
 import { JobsTableView } from "@/features/jobs/components/jobs-table-view"
 import {
+  defaultJobListFilters,
   hasActiveJobListFilters,
   jobListPriorityOptions,
   jobListSortOptions,
@@ -35,7 +38,10 @@ type JobsPageQueryProps = {
 }
 
 const selectClassName =
-  "flex h-11 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm shadow-xs transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+  "flex h-11 min-w-0 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm shadow-xs transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+
+const filterCardClassName =
+  "grid min-w-0 gap-2 rounded-[1.5rem] border bg-background/80 p-3 shadow-sm"
 
 const quickFilterStatuses = [
   { label: "All", value: "all" },
@@ -50,8 +56,11 @@ export function JobsPageQuery({
   filters,
   initialData,
 }: Readonly<JobsPageQueryProps>) {
+  const router = useRouter()
   const queryClient = useQueryClient()
   const hasActiveFilters = hasActiveJobListFilters(filters)
+  const [searchValue, setSearchValue] = React.useState(filters.q)
+  const deferredSearchValue = React.useDeferredValue(searchValue)
   const queryKey = React.useMemo(
     () => jobsQueryKeys.list(filters),
     [
@@ -78,6 +87,33 @@ export function JobsPageQuery({
     queryClient.setQueryData(queryKey, initialData)
   }, [initialData, queryClient, queryKey])
 
+  React.useEffect(() => {
+    setSearchValue(filters.q)
+  }, [filters.q])
+
+  React.useEffect(() => {
+    const normalizedSearchValue = deferredSearchValue.trim()
+
+    if (normalizedSearchValue === filters.q) {
+      return
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      startTransition(() => {
+        router.replace(
+          buildJobsListHref(filters, {
+            q: normalizedSearchValue,
+          }),
+          { scroll: false },
+        )
+      })
+    }, 250)
+
+    return () => {
+      window.clearTimeout(timeoutId)
+    }
+  }, [deferredSearchValue, filters, router])
+
   const data = query.data ?? initialData
 
   if (!data) {
@@ -96,6 +132,15 @@ export function JobsPageQuery({
   const filteredAppliedJobs = jobs.filter((job) => job.status === "applied")
   const filteredOfferJobs = jobs.filter((job) => job.status === "offer")
   const activeFilterSummary = buildActiveFilterSummary(filters)
+  const filterFormKey = buildJobsListHref(filters, {})
+
+  function handleClearFilters() {
+    setSearchValue("")
+
+    startTransition(() => {
+      router.replace(buildClearedJobsListHref(filters.view), { scroll: false })
+    })
+  }
 
   return (
     <div className="flex flex-col gap-4">
@@ -225,25 +270,36 @@ export function JobsPageQuery({
           </div>
 
           <div className="border-b bg-muted/[0.12] px-4 py-4">
-            <form method="get" className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+            <form
+              key={filterFormKey}
+              method="get"
+              className="grid min-w-0 gap-3 md:grid-cols-2 xl:grid-cols-4"
+            >
               <input type="hidden" name="view" value={filters.view} />
-              <div className="grid gap-2 rounded-[1.5rem] border bg-background/80 p-3 shadow-sm md:col-span-2">
+              <div className={cn(filterCardClassName, "md:col-span-2")}>
                 <label htmlFor="jobs-search" className="text-sm font-medium">
                   Search
                 </label>
                 <Input
+                  autoComplete="off"
+                  className="min-w-0"
                   id="jobs-search"
                   name="q"
-                  defaultValue={filters.q}
                   placeholder="Search by role, company, or location"
+                  value={searchValue}
+                  onChange={(event) => setSearchValue(event.target.value)}
                 />
+                <p className="text-xs text-muted-foreground">
+                  Updates automatically while you type.
+                </p>
               </div>
 
-              <div className="grid gap-2 rounded-[1.5rem] border bg-background/80 p-3 shadow-sm">
+              <div className={filterCardClassName}>
                 <label htmlFor="jobs-source" className="text-sm font-medium">
                   Source
                 </label>
                 <Input
+                  className="min-w-0"
                   id="jobs-source"
                   name="source"
                   defaultValue={filters.source}
@@ -281,11 +337,12 @@ export function JobsPageQuery({
                 }))}
               />
 
-              <div className="grid gap-2 rounded-[1.5rem] border bg-background/80 p-3 shadow-sm">
+              <div className={filterCardClassName}>
                 <label htmlFor="jobs-applied-from" className="text-sm font-medium">
                   Applied from
                 </label>
                 <Input
+                  className="min-w-0"
                   id="jobs-applied-from"
                   name="appliedFrom"
                   defaultValue={filters.appliedFrom}
@@ -293,11 +350,12 @@ export function JobsPageQuery({
                 />
               </div>
 
-              <div className="grid gap-2 rounded-[1.5rem] border bg-background/80 p-3 shadow-sm">
+              <div className={filterCardClassName}>
                 <label htmlFor="jobs-applied-to" className="text-sm font-medium">
                   Applied to
                 </label>
                 <Input
+                  className="min-w-0"
                   id="jobs-applied-to"
                   name="appliedTo"
                   defaultValue={filters.appliedTo}
@@ -305,11 +363,12 @@ export function JobsPageQuery({
                 />
               </div>
 
-              <div className="grid gap-2 rounded-[1.5rem] border bg-background/80 p-3 shadow-sm">
+              <div className={filterCardClassName}>
                 <label htmlFor="jobs-salary-min" className="text-sm font-medium">
                   Salary min
                 </label>
                 <Input
+                  className="min-w-0"
                   id="jobs-salary-min"
                   name="salaryMin"
                   defaultValue={filters.salaryMin}
@@ -318,11 +377,12 @@ export function JobsPageQuery({
                 />
               </div>
 
-              <div className="grid gap-2 rounded-[1.5rem] border bg-background/80 p-3 shadow-sm">
+              <div className={filterCardClassName}>
                 <label htmlFor="jobs-salary-max" className="text-sm font-medium">
                   Salary max
                 </label>
                 <Input
+                  className="min-w-0"
                   id="jobs-salary-max"
                   name="salaryMax"
                   defaultValue={filters.salaryMax}
@@ -346,13 +406,14 @@ export function JobsPageQuery({
                   Apply
                 </button>
                 {hasActiveFilters ? (
-                  <Link
-                    href="/jobs"
+                  <button
+                    type="button"
                     className={buttonVariants({ size: "lg", variant: "outline" })}
+                    onClick={handleClearFilters}
                   >
                     <X data-icon="inline-start" />
-                    Reset
-                  </Link>
+                    Clear filters
+                  </button>
                 ) : null}
               </div>
             </form>
@@ -399,6 +460,16 @@ export function JobsPageQuery({
                   : "No jobs yet. Create the first role to start building your pipeline."}
                 </p>
               </div>
+              {hasActiveFilters ? (
+                <button
+                  type="button"
+                  className={buttonVariants({ variant: "outline" })}
+                  onClick={handleClearFilters}
+                >
+                  <X data-icon="inline-start" />
+                  Clear filters
+                </button>
+              ) : null}
               {!hasActiveFilters ? (
                 <Link href="/jobs/new" className={buttonVariants({ variant: "outline" })}>
                   <Plus data-icon="inline-start" />
@@ -431,7 +502,7 @@ function FilterSelect({
   options: Array<{ label: string; value: string }>
 }) {
   return (
-    <div className="grid gap-2 rounded-[1.5rem] border bg-background/80 p-3 shadow-sm">
+    <div className={filterCardClassName}>
       <label htmlFor={name} className="text-sm font-medium">
         {label}
       </label>
@@ -529,6 +600,16 @@ function buildJobsListHref(
 
   const queryString = params.toString()
   return queryString ? `/jobs?${queryString}` : "/jobs"
+}
+
+function buildClearedJobsListHref(view: JobListFilters["view"]) {
+  return buildJobsListHref(
+    {
+      ...defaultJobListFilters,
+      view,
+    },
+    {},
+  )
 }
 
 function capitalize(value: string) {

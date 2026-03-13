@@ -97,7 +97,6 @@ export function hasActiveJobListFilters(filters: JobListFilters) {
     filters.priority !== defaultJobListFilters.priority ||
     filters.sort !== defaultJobListFilters.sort ||
     filters.status !== defaultJobListFilters.status ||
-    filters.view !== defaultJobListFilters.view ||
     filters.workMode !== defaultJobListFilters.workMode
   )
 }

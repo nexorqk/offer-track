@@ -1,9 +1,19 @@
 import { render, screen, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
-import { describe, expect, it } from "vitest"
+import { beforeEach, describe, expect, it, vi } from "vitest"
 
 import { JobsTableView } from "@/features/jobs/components/jobs-table-view"
 import type { JobListItem } from "@/features/jobs/types/job"
+
+const navigationMocks = vi.hoisted(() => ({
+  push: vi.fn(),
+}))
+
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({
+    push: navigationMocks.push,
+  }),
+}))
 
 function createJob(index: number): JobListItem {
   return {
@@ -22,6 +32,10 @@ function createJob(index: number): JobListItem {
 }
 
 describe("JobsTableView", () => {
+  beforeEach(() => {
+    navigationMocks.push.mockReset()
+  })
+
   it("renders a real table with pagination", async () => {
     const user = userEvent.setup()
 
@@ -53,5 +67,15 @@ describe("JobsTableView", () => {
     await user.click(screen.getByLabelText("Salary"))
 
     expect(within(table).queryByText("Salary")).not.toBeInTheDocument()
+  })
+
+  it("opens job details when clicking a row", async () => {
+    const user = userEvent.setup()
+
+    render(<JobsTableView jobs={[createJob(1)]} />)
+
+    await user.click(screen.getByRole("link", { name: "Open Role 1" }))
+
+    expect(navigationMocks.push).toHaveBeenCalledWith("/jobs/job-1")
   })
 })

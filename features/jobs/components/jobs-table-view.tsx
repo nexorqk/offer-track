@@ -3,6 +3,7 @@
 import Link from "next/link"
 import * as React from "react"
 import { startTransition } from "react"
+import { useRouter } from "next/navigation"
 import {
   ArrowUpRight,
   ChevronLeft,
@@ -12,6 +13,7 @@ import {
 } from "lucide-react"
 
 import { buttonVariants } from "@/components/ui/button-variants"
+import { JobStatusBadge } from "@/features/jobs/components/job-status-badge"
 import type { JobListItem } from "@/features/jobs/types/job"
 import { cn } from "@/lib/utils"
 
@@ -26,7 +28,7 @@ const optionalColumns = [
   {
     id: "status",
     label: "Status",
-    render: (job: JobListItem) => <StatusBadge status={job.status} />,
+    render: (job: JobListItem) => <JobStatusBadge status={job.status} />,
   },
   {
     id: "priority",
@@ -76,6 +78,7 @@ export function JobsTableView({
 }: Readonly<{
   jobs: JobListItem[]
 }>) {
+  const router = useRouter()
   const [isColumnPanelOpen, setIsColumnPanelOpen] = React.useState(false)
   const [pageIndex, setPageIndex] = React.useState(0)
   const [visibleColumnIds, setVisibleColumnIds] =
@@ -125,56 +128,64 @@ export function JobsTableView({
     })
   }
 
+  function openJob(jobId: string) {
+    startTransition(() => {
+      router.push(`/jobs/${jobId}`)
+    })
+  }
+
   return (
     <div className="grid gap-4 p-4 surface-enter surface-enter-delay-3">
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <div className="flex flex-col gap-1">
-          <p className="text-sm text-muted-foreground">
-            Showing {rangeStart + 1}-{Math.min(rangeStart + PAGE_SIZE, jobs.length)} of {jobs.length}{" "}
-            roles.
-          </p>
-          <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
-            {visibleColumns.length} optional columns visible
-          </p>
-        </div>
+      <div className="sticky top-4 z-20 rounded-[1.75rem] border bg-background/92 px-4 py-4 shadow-sm backdrop-blur">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex flex-col gap-1">
+            <p className="text-sm text-muted-foreground">
+              Showing {rangeStart + 1}-{Math.min(rangeStart + PAGE_SIZE, jobs.length)} of {jobs.length}{" "}
+              roles.
+            </p>
+            <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+              {visibleColumns.length} optional columns visible
+            </p>
+          </div>
 
-        <div className="relative flex items-center gap-2 self-start">
-          <button
-            type="button"
-            aria-expanded={isColumnPanelOpen}
-            aria-controls="jobs-table-columns"
-            className={buttonVariants({ size: "sm", variant: "outline" })}
-            onClick={() => setIsColumnPanelOpen((current) => !current)}
-          >
-            <Columns3 data-icon="inline-start" />
-            Columns
-          </button>
-
-          {isColumnPanelOpen ? (
-            <div
-              id="jobs-table-columns"
-              className="absolute right-0 top-full z-10 mt-2 grid min-w-56 gap-2 rounded-[1.25rem] border bg-background/95 p-3 shadow-lg backdrop-blur"
+          <div className="relative flex items-center gap-2 self-start">
+            <button
+              type="button"
+              aria-expanded={isColumnPanelOpen}
+              aria-controls="jobs-table-columns"
+              className={buttonVariants({ size: "sm", variant: "outline" })}
+              onClick={() => setIsColumnPanelOpen((current) => !current)}
             >
-              <div className="mb-1">
-                <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
-                  Visible columns
-                </p>
+              <Columns3 data-icon="inline-start" />
+              Columns
+            </button>
+
+            {isColumnPanelOpen ? (
+              <div
+                id="jobs-table-columns"
+                className="absolute right-0 top-full z-10 mt-2 grid min-w-56 gap-2 rounded-[1.25rem] border bg-background/95 p-3 shadow-lg backdrop-blur"
+              >
+                <div className="mb-1">
+                  <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
+                    Visible columns
+                  </p>
+                </div>
+                {optionalColumns.map((column) => (
+                  <label
+                    key={column.id}
+                    className="flex items-center gap-2 rounded-xl px-2 py-1.5 text-sm text-foreground hover:bg-muted/40"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={visibleColumnIds.includes(column.id)}
+                      onChange={() => toggleColumn(column.id)}
+                    />
+                    {column.label}
+                  </label>
+                ))}
               </div>
-              {optionalColumns.map((column) => (
-                <label
-                  key={column.id}
-                  className="flex items-center gap-2 rounded-xl px-2 py-1.5 text-sm text-foreground hover:bg-muted/40"
-                >
-                  <input
-                    type="checkbox"
-                    checked={visibleColumnIds.includes(column.id)}
-                    onChange={() => toggleColumn(column.id)}
-                  />
-                  {column.label}
-                </label>
-              ))}
-            </div>
-          ) : null}
+            ) : null}
+          </div>
         </div>
       </div>
 
@@ -193,7 +204,25 @@ export function JobsTableView({
             {paginatedJobs.map((job) => (
               <tr
                 key={job.id}
-                className="align-top transition-colors odd:bg-background/70 hover:bg-muted/20"
+                tabIndex={0}
+                role="link"
+                aria-label={`Open ${job.title}`}
+                className="cursor-pointer align-top outline-none transition-colors odd:bg-background/70 hover:bg-muted/20 focus-visible:bg-muted/20"
+                onClick={(event) => {
+                  if (isInteractiveTarget(event.target)) {
+                    return
+                  }
+
+                  openJob(job.id)
+                }}
+                onKeyDown={(event) => {
+                  if (event.key !== "Enter" && event.key !== " ") {
+                    return
+                  }
+
+                  event.preventDefault()
+                  openJob(job.id)
+                }}
               >
                 <TableCell className="min-w-56">
                   <div className="flex min-w-0 flex-col gap-1">
@@ -203,6 +232,7 @@ export function JobsTableView({
                     <Link
                       href={`/jobs/${job.id}`}
                       className="font-medium text-foreground underline-offset-4 hover:underline"
+                      onClick={(event) => event.stopPropagation()}
                     >
                       {job.title}
                     </Link>
@@ -219,6 +249,7 @@ export function JobsTableView({
                   <Link
                     href={`/jobs/${job.id}`}
                     className={buttonVariants({ size: "sm", variant: "outline" })}
+                    onClick={(event) => event.stopPropagation()}
                   >
                     Open
                     <ArrowUpRight data-icon="inline-end" />
@@ -295,25 +326,6 @@ function TableCell({
   )
 }
 
-function StatusBadge({ status }: Readonly<{ status: string }>) {
-  const tone =
-    status === "offer"
-      ? "bg-emerald-500/12 text-emerald-700 dark:text-emerald-300"
-      : status === "rejected"
-        ? "bg-rose-500/12 text-rose-700 dark:text-rose-300"
-        : status === "technical" || status === "final"
-          ? "bg-cyan-500/12 text-cyan-700 dark:text-cyan-300"
-          : "bg-secondary text-secondary-foreground"
-
-  return (
-    <span
-      className={`inline-flex rounded-full px-2 py-1 text-[0.68rem] font-medium uppercase tracking-[0.18em] ${tone}`}
-    >
-      {formatStatusLabel(status)}
-    </span>
-  )
-}
-
 function PriorityBadge({ priority }: Readonly<{ priority: string }>) {
   const tone =
     priority === "high"
@@ -369,10 +381,9 @@ function capitalize(value: string) {
   return value[0].toUpperCase() + value.slice(1)
 }
 
-function formatStatusLabel(value: string) {
-  if (value === "hr_screen") {
-    return "HR screen"
-  }
-
-  return value[0].toUpperCase() + value.slice(1)
+function isInteractiveTarget(target: EventTarget | null) {
+  return (
+    target instanceof HTMLElement &&
+    Boolean(target.closest("a, button, input, label, select, textarea"))
+  )
 }

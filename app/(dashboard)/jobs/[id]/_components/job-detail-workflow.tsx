@@ -19,6 +19,7 @@ import { z } from "zod"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { ToastViewport, useToastQueue } from "@/components/ui/toast"
 import { contactFormSchema } from "@/features/contacts/schemas/contact"
 import { interviewFormSchema } from "@/features/interviews/schemas/interview"
 import {
@@ -86,22 +87,29 @@ export function JobDetailWorkflow({
   notes: JobNoteListItem[]
   tasks: JobTaskListItem[]
 }>) {
+  const { dismissToast, pushToast, toasts } = useToastQueue()
+
   return (
-    <div className="grid gap-5">
-      <ContactPanel contacts={contacts} jobId={jobId} />
-      <InterviewPanel interviews={interviews} jobId={jobId} />
-      <TaskPanel jobId={jobId} tasks={tasks} />
-      <NotePanel jobId={jobId} notes={notes} />
-    </div>
+    <>
+      <div className="grid gap-5">
+        <ContactPanel contacts={contacts} jobId={jobId} pushToast={pushToast} />
+        <InterviewPanel interviews={interviews} jobId={jobId} pushToast={pushToast} />
+        <TaskPanel jobId={jobId} pushToast={pushToast} tasks={tasks} />
+        <NotePanel jobId={jobId} notes={notes} pushToast={pushToast} />
+      </div>
+      <ToastViewport dismissToast={dismissToast} toasts={toasts} />
+    </>
   )
 }
 
 function ContactPanel({
   contacts,
   jobId,
+  pushToast,
 }: Readonly<{
   contacts: JobContactListItem[]
   jobId: string
+  pushToast: PushToast
 }>) {
   const {
     formAction,
@@ -116,6 +124,7 @@ function ContactPanel({
     initialState: initialJobContactState,
     schema: contactFormSchema,
   })
+  useJobDetailActionToast(state, pushToast)
 
   return (
     <WorkflowCard
@@ -237,9 +246,11 @@ function ContactPanel({
 function InterviewPanel({
   interviews,
   jobId,
+  pushToast,
 }: Readonly<{
   interviews: JobInterviewListItem[]
   jobId: string
+  pushToast: PushToast
 }>) {
   const {
     formAction,
@@ -255,6 +266,7 @@ function InterviewPanel({
     initialState: initialJobInterviewState,
     schema: interviewFormSchema,
   })
+  useJobDetailActionToast(state, pushToast)
   const [timezoneOffsetMinutes, setTimezoneOffsetMinutes] = React.useState(0)
 
   React.useEffect(() => {
@@ -404,9 +416,11 @@ function InterviewPanel({
 
 function TaskPanel({
   jobId,
+  pushToast,
   tasks,
 }: Readonly<{
   jobId: string
+  pushToast: PushToast
   tasks: JobTaskListItem[]
 }>) {
   const {
@@ -422,6 +436,7 @@ function TaskPanel({
     initialState: initialJobTaskState,
     schema: taskFormSchema,
   })
+  useJobDetailActionToast(state, pushToast)
 
   return (
     <WorkflowCard
@@ -512,9 +527,11 @@ function TaskPanel({
 function NotePanel({
   jobId,
   notes,
+  pushToast,
 }: Readonly<{
   jobId: string
   notes: JobNoteListItem[]
+  pushToast: PushToast
 }>) {
   const [state, action, isPending] = useActionState(
     createJobNoteAction,
@@ -528,6 +545,7 @@ function NotePanel({
     isSaved: state.status === "success",
     jobId,
   })
+  useJobDetailActionToast(state, pushToast)
   useRefreshOnSuccess(state.status)
 
   return (
@@ -770,17 +788,13 @@ function FormStateMessage<FieldName extends string>({
 }: Readonly<{
   state: JobDetailMutationState<FieldName>
 }>) {
-  if (!state.message) {
+  if (state.status !== "error" || !state.message) {
     return null
   }
 
   return (
     <div
-      className={
-        state.status === "success"
-          ? "rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-700 dark:text-emerald-300"
-          : "rounded-xl border border-destructive/20 bg-destructive/10 px-3 py-2 text-sm text-destructive"
-      }
+      className="rounded-xl border border-destructive/20 bg-destructive/10 px-3 py-2 text-sm text-destructive"
     >
       {state.message}
     </div>
@@ -867,6 +881,42 @@ function useRefreshOnSuccess(status: JobDetailMutationState<string>["status"]) {
 
     router.refresh()
   }, [router, status])
+}
+
+type PushToast = ReturnType<typeof useToastQueue>["pushToast"]
+
+function useJobDetailActionToast<FieldName extends string>(
+  state: JobDetailMutationState<FieldName>,
+  pushToast: PushToast,
+) {
+  const lastHandledStateRef = React.useRef<JobDetailMutationState<FieldName> | null>(null)
+
+  React.useEffect(() => {
+    if (state === lastHandledStateRef.current) {
+      return
+    }
+
+    lastHandledStateRef.current = state
+
+    if (!state.message) {
+      return
+    }
+
+    if (state.status === "success") {
+      pushToast({
+        message: state.message,
+        tone: "success",
+      })
+      return
+    }
+
+    if (state.status === "error" && !state.fieldErrors) {
+      pushToast({
+        message: state.message,
+        tone: "error",
+      })
+    }
+  }, [pushToast, state])
 }
 
 function useAutosavedNoteDraft({

@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest"
 
-import { parseJobListFilters } from "@/features/jobs/schemas/job-list"
+import {
+  hasActiveJobListFilters,
+  parseJobListFilters,
+} from "@/features/jobs/schemas/job-list"
 
 describe("job list filters", () => {
   it("returns defaults for empty params", () => {
@@ -97,5 +100,23 @@ describe("job list filters", () => {
       view: "table",
       workMode: "all",
     })
+  })
+
+  it("does not treat the selected view as an active filter", () => {
+    expect(
+      hasActiveJobListFilters({
+        appliedFrom: "",
+        appliedTo: "",
+        priority: "all",
+        q: "",
+        salaryMax: "",
+        salaryMin: "",
+        sort: "updated_desc",
+        source: "",
+        status: "all",
+        view: "kanban",
+        workMode: "all",
+      }),
+    ).toBe(false)
   })
 })

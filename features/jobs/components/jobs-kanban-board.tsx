@@ -2,6 +2,8 @@
 
 import Link from "next/link"
 import * as React from "react"
+import { startTransition } from "react"
+import { useRouter } from "next/navigation"
 import {
   closestCorners,
   DndContext,
@@ -39,6 +41,7 @@ export function JobsKanbanBoard({
 }: Readonly<{
   jobs: JobListItem[]
 }>) {
+  const router = useRouter()
   const queryClient = useQueryClient()
   const [jobs, setJobs] = React.useState(initialJobs)
   const [errorMessage, setErrorMessage] = React.useState<string | null>(null)
@@ -187,6 +190,12 @@ export function JobsKanbanBoard({
     )
   }
 
+  function openJob(jobId: string) {
+    startTransition(() => {
+      router.push(`/jobs/${jobId}`)
+    })
+  }
+
   return (
     <div className="grid gap-4">
       {errorMessage ? (
@@ -263,6 +272,7 @@ export function JobsKanbanBoard({
                 key={status}
                 animationDelay={index * 60}
                 jobs={jobs.filter((job) => job.status === status)}
+                onOpenJob={openJob}
                 status={status}
               />
             ))}
@@ -276,10 +286,12 @@ export function JobsKanbanBoard({
 function KanbanColumn({
   animationDelay,
   jobs,
+  onOpenJob,
   status,
 }: Readonly<{
   animationDelay?: number
   jobs: JobListItem[]
+  onOpenJob: (jobId: string) => void
   status: JobStatus
 }>) {
   const theme = getStatusTheme(status)
@@ -332,7 +344,7 @@ function KanbanColumn({
             Drop a card here
           </div>
         ) : (
-          jobs.map((job) => <KanbanCard key={job.id} job={job} />)
+          jobs.map((job) => <KanbanCard key={job.id} job={job} onOpenJob={onOpenJob} />)
         )}
       </div>
     </section>
@@ -341,8 +353,10 @@ function KanbanColumn({
 
 function KanbanCard({
   job,
+  onOpenJob,
 }: Readonly<{
   job: JobListItem
+  onOpenJob: (jobId: string) => void
 }>) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     data: {
@@ -354,14 +368,36 @@ function KanbanCard({
   return (
     <article
       ref={setNodeRef}
+      tabIndex={0}
+      role="link"
+      aria-label={`Open ${job.title}`}
       style={{
         opacity: isDragging ? 0.7 : 1,
         transform: CSS.Translate.toString(transform),
       }}
       className={cn(
-        "rounded-[1.35rem] border bg-background/92 p-3 shadow-sm hover-lift",
+        "cursor-pointer rounded-[1.35rem] border bg-background/92 p-3 shadow-sm outline-none hover-lift focus-visible:ring-2 focus-visible:ring-primary/30",
         isDragging && "shadow-lg ring-2 ring-primary/20",
       )}
+      onClick={(event) => {
+        if (isInteractiveTarget(event.target)) {
+          return
+        }
+
+        onOpenJob(job.id)
+      }}
+      onKeyDown={(event) => {
+        if (event.key !== "Enter" && event.key !== " ") {
+          return
+        }
+
+        if (isInteractiveTarget(event.target)) {
+          return
+        }
+
+        event.preventDefault()
+        onOpenJob(job.id)
+      }}
     >
       <div className="mb-3 flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
@@ -374,6 +410,7 @@ function KanbanCard({
           type="button"
           className="inline-flex size-8 items-center justify-center rounded-xl border bg-background text-muted-foreground shadow-sm"
           aria-label={`Drag ${job.title}`}
+          onClick={(event) => event.stopPropagation()}
           {...attributes}
           {...listeners}
         >
@@ -407,6 +444,7 @@ function KanbanCard({
         <Link
           href={`/jobs/${job.id}`}
           className={buttonVariants({ size: "sm", variant: "outline" })}
+          onClick={(event) => event.stopPropagation()}
         >
           Open
           <MoveRight data-icon="inline-end" />
@@ -533,6 +571,13 @@ function formatSalary(min: number | null, max: number | null) {
 
 function capitalize(value: string) {
   return value[0].toUpperCase() + value.slice(1)
+}
+
+function isInteractiveTarget(target: EventTarget | null) {
+  return (
+    target instanceof HTMLElement &&
+    Boolean(target.closest("a, button, input, label, select, textarea"))
+  )
 }
 
 function formatShortRelative(value: Date) {
