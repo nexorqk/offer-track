@@ -4,6 +4,7 @@ export type DashboardNavIcon =
   | "contacts"
   | "dashboard"
   | "jobs"
+  | "notes"
   | "settings"
   | "tasks"
 
@@ -40,6 +41,14 @@ export const dashboardNavigationSections = [
         icon: "jobs",
         label: "Jobs",
         title: "Job pipeline",
+      },
+      {
+        description: "Reusable long-form notes, drafts, prep material, and search thinking.",
+        group: "Track",
+        href: "/notes",
+        icon: "notes",
+        label: "Notes",
+        title: "Search notebook",
       },
       {
         description: "Company context, role inventory, and relationship history.",
@@ -142,9 +151,15 @@ function getQuickActions(pathname: string) {
       ]
     case "/jobs":
       return [
+        { href: "/notes", label: "Open notebook" },
         { href: "/companies", label: "Browse companies" },
         { href: "/contacts", label: "View contacts" },
-        { href: "/tasks", label: "Plan follow-ups" },
+      ]
+    case "/notes":
+      return [
+        { href: "/jobs", label: "Back to pipeline" },
+        { href: "/tasks", label: "Follow-up queue" },
+        { href: "/dashboard", label: "Workspace overview" },
       ]
     case "/companies":
       return [

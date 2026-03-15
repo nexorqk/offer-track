@@ -6,6 +6,7 @@ const guestOnlyRoutes = new Set(["/login", "/register"])
 const protectedRoutePrefixes = [
   "/dashboard",
   "/jobs",
+  "/notes",
   "/companies",
   "/contacts",
   "/tasks",

@@ -12,6 +12,7 @@ import {
   notes,
   profiles,
   tasks,
+  workspaceNotes,
   workMode,
 } from "@/lib/db/schema"
 
@@ -74,6 +75,15 @@ describe("database schema", () => {
       "createdAt",
       "updatedAt",
     ])
+
+    expect(Object.keys(getTableColumns(workspaceNotes))).toEqual([
+      "id",
+      "userId",
+      "title",
+      "content",
+      "createdAt",
+      "updatedAt",
+    ])
   })
 
   it("deduplicates company names per user with a normalized key", () => {
@@ -91,5 +101,6 @@ describe("database schema", () => {
     expect(getTableConfig(notes).foreignKeys).toHaveLength(2)
     expect(getTableConfig(interviews).foreignKeys).toHaveLength(1)
     expect(getTableConfig(tasks).foreignKeys).toHaveLength(2)
+    expect(getTableConfig(workspaceNotes).foreignKeys).toHaveLength(1)
   })
 })

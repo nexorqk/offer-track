@@ -34,6 +34,11 @@ export const contactsQueryKeys = {
   list: () => ["contacts", "list"] as const,
 }
 
+export const notesQueryKeys = {
+  all: () => ["notes"] as const,
+  list: () => ["notes", "list"] as const,
+}
+
 export const tasksQueryKeys = {
   all: () => ["tasks"] as const,
   list: (filter: TaskListFilter) => ["tasks", "list", filter] as const,

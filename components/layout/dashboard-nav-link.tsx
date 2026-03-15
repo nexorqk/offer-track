@@ -7,6 +7,7 @@ import {
   BriefcaseBusiness,
   Building2,
   Clock3,
+  NotebookText,
   Settings,
   UserRoundSearch,
 } from "lucide-react"
@@ -20,6 +21,7 @@ const iconMap = {
   contacts: UserRoundSearch,
   dashboard: BarChart3,
   jobs: BriefcaseBusiness,
+  notes: NotebookText,
   settings: Settings,
   tasks: Clock3,
 } as const

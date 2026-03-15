@@ -219,6 +219,28 @@ export const notes = pgTable(
   ]
 );
 
+export const workspaceNotes = pgTable(
+  "workspace_notes",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => profiles.id, { onDelete: "cascade" }),
+    title: text("title").notNull(),
+    content: text("content").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    index("workspace_notes_user_id_idx").on(table.userId),
+    index("workspace_notes_updated_at_idx").on(table.updatedAt),
+  ]
+);
+
 export const interviews = pgTable(
   "interviews",
   {
@@ -286,6 +308,7 @@ export const profilesRelations = relations(profiles, ({ many, one }) => ({
   contacts: many(contacts),
   notes: many(notes),
   tasks: many(tasks),
+  workspaceNotes: many(workspaceNotes),
   user: one(users, {
     fields: [profiles.id],
     references: [users.id],
@@ -353,6 +376,13 @@ export const notesRelations = relations(notes, ({ one }) => ({
   }),
   profile: one(profiles, {
     fields: [notes.userId],
+    references: [profiles.id],
+  }),
+}));
+
+export const workspaceNotesRelations = relations(workspaceNotes, ({ one }) => ({
+  profile: one(profiles, {
+    fields: [workspaceNotes.userId],
     references: [profiles.id],
   }),
 }));
