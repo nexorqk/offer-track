@@ -4,18 +4,31 @@ import { beforeEach, describe, expect, it, vi } from "vitest"
 
 import { JobDetailWorkflow } from "@/app/(dashboard)/jobs/[id]/_components/job-detail-workflow"
 
+type MockJobDetailActionResult = {
+  message?: string
+  status: "error" | "idle" | "success"
+}
+
 const actionMocks = vi.hoisted(() => ({
-  createJobContactAction: vi.fn(
-    async (_state: unknown, _formData: FormData) => ({ status: "idle" as const }),
+  createJobContactAction: vi.fn<
+    (_state: unknown, _formData: FormData) => Promise<MockJobDetailActionResult>
+  >(
+    async (_state: unknown, _formData: FormData) => ({ status: "idle" }),
   ),
-  createJobInterviewAction: vi.fn(
-    async (_state: unknown, _formData: FormData) => ({ status: "idle" as const }),
+  createJobInterviewAction: vi.fn<
+    (_state: unknown, _formData: FormData) => Promise<MockJobDetailActionResult>
+  >(
+    async (_state: unknown, _formData: FormData) => ({ status: "idle" }),
   ),
-  createJobNoteAction: vi.fn(
-    async (_state: unknown, _formData: FormData) => ({ status: "idle" as const }),
+  createJobNoteAction: vi.fn<
+    (_state: unknown, _formData: FormData) => Promise<MockJobDetailActionResult>
+  >(
+    async (_state: unknown, _formData: FormData) => ({ status: "idle" }),
   ),
-  createJobTaskAction: vi.fn(
-    async (_state: unknown, _formData: FormData) => ({ status: "idle" as const }),
+  createJobTaskAction: vi.fn<
+    (_state: unknown, _formData: FormData) => Promise<MockJobDetailActionResult>
+  >(
+    async (_state: unknown, _formData: FormData) => ({ status: "idle" }),
   ),
 }))
 

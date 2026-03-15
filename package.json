@@ -5,11 +5,14 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
+    "dev:playwright": "next dev --turbopack --hostname localhost --port 3000",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
     "test": "npm run test:backend && npm run test:frontend",
     "test:backend": "vitest run -c vitest.backend.config.ts",
+    "test:e2e": "playwright test",
+    "test:e2e:headed": "playwright test --headed",
     "test:frontend": "vitest run -c vitest.frontend.config.ts",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
@@ -45,6 +48,7 @@
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
+    "@playwright/test": "^1.58.2",
     "@tailwindcss/postcss": "^4.1.18",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
