@@ -97,11 +97,13 @@ export async function listJobsForUser(
       id: jobs.id,
       location: jobs.location,
       priority: jobs.priority,
+      publicSummary: jobs.publicSummary,
       salaryMax: jobs.salaryMax,
       salaryMin: jobs.salaryMin,
       status: jobs.status,
       title: jobs.title,
       updatedAt: jobs.updatedAt,
+      visibilityProfile: jobs.visibilityProfile,
       workMode: jobs.workMode,
     })
     .from(jobs)
@@ -162,6 +164,7 @@ export async function getJobDetailForUser(userId: string, jobId: string) {
       id: jobs.id,
       location: jobs.location,
       priority: jobs.priority,
+      publicSummary: jobs.publicSummary,
       salaryMax: jobs.salaryMax,
       salaryMin: jobs.salaryMin,
       source: jobs.source,
@@ -169,6 +172,7 @@ export async function getJobDetailForUser(userId: string, jobId: string) {
       status: jobs.status,
       title: jobs.title,
       updatedAt: jobs.updatedAt,
+      visibilityProfile: jobs.visibilityProfile,
       workMode: jobs.workMode,
     })
     .from(jobs)
@@ -242,7 +246,9 @@ export async function getJobDetailForUser(userId: string, jobId: string) {
         content: notes.content,
         createdAt: notes.createdAt,
         id: notes.id,
+        noteKind: notes.noteKind,
         updatedAt: notes.updatedAt,
+        visibilityProfile: notes.visibilityProfile,
       })
       .from(notes)
       .where(and(eq(notes.userId, userId), eq(notes.jobId, jobId)))
@@ -261,12 +267,14 @@ export async function getJobDetailForUser(userId: string, jobId: string) {
         employmentType: job.employmentType ?? undefined,
         location: job.location ?? undefined,
         priority: job.priority as "high" | "low" | "medium",
+        publicSummary: job.publicSummary ?? undefined,
         salaryMax: job.salaryMax ?? undefined,
         salaryMin: job.salaryMin ?? undefined,
         source: job.source ?? undefined,
         sourceUrl: job.sourceUrl ?? undefined,
         status: job.status,
         title: job.title,
+        visibilityProfile: job.visibilityProfile,
         workMode: job.workMode ?? undefined,
       }),
     },

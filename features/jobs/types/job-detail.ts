@@ -13,7 +13,7 @@ export type JobContactFieldName =
 
 export type JobTaskFieldName = "dueDate" | "title"
 
-export type JobNoteFieldName = "content"
+export type JobNoteFieldName = "content" | "noteKind" | "visibilityProfile"
 
 export type JobInterviewFieldName =
   | "durationMinutes"
@@ -45,7 +45,9 @@ export type JobNoteListItem = {
   content: string
   createdAt: Date
   id: string
+  noteKind: "internal" | "reflection" | "update"
   updatedAt: Date
+  visibilityProfile: "private" | "shared" | "public_showcase"
 }
 
 export type JobInterviewListItem = {

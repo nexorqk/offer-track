@@ -33,8 +33,11 @@ vi.mock("@/lib/db", () => ({
   },
 }))
 
-import { createJobInterviewAction } from "@/features/jobs/server/actions"
-import { interviews } from "@/lib/db/schema"
+import {
+  createJobInterviewAction,
+  createJobNoteAction,
+} from "@/features/jobs/server/actions"
+import { interviews, notes } from "@/lib/db/schema"
 
 function createFormData(entries: Record<string, string>) {
   const formData = new FormData()
@@ -61,6 +64,16 @@ function mockOwnedJob(job: { companyId: string; id: string } | null) {
 }
 
 function mockInterviewInsert() {
+  const values = vi.fn().mockResolvedValue(undefined)
+
+  mockDbInsert.mockReturnValue({ values })
+
+  return {
+    values,
+  }
+}
+
+function mockNoteInsert() {
   const values = vi.fn().mockResolvedValue(undefined)
 
   mockDbInsert.mockReturnValue({ values })
@@ -175,6 +188,69 @@ describe("createJobInterviewAction", () => {
     expect(mockRevalidatePath).toHaveBeenCalledWith("/jobs/job-1")
     expect(result).toEqual({
       message: "Interview scheduled.",
+      status: "success",
+    })
+  })
+})
+
+describe("createJobNoteAction", () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockRequireCurrentUser.mockResolvedValue({
+      email: "alex@example.com",
+      id: "user-1",
+    })
+  })
+
+  it("returns validation errors when an internal note is marked public", async () => {
+    const result = await createJobNoteAction(
+      { status: "idle" },
+      createFormData({
+        content: "Candidate prep notes",
+        jobId: "job-1",
+        noteKind: "internal",
+        visibilityProfile: "public_showcase",
+      }),
+    )
+
+    expect(result.status).toBe("error")
+    expect(result.message).toBe("Write a note before saving.")
+    expect(result.fieldErrors?.visibilityProfile).toContain(
+      "Only reflection and update notes can be published to the public showcase.",
+    )
+    expect(mockDbSelect).not.toHaveBeenCalled()
+    expect(mockDbInsert).not.toHaveBeenCalled()
+  })
+
+  it("creates a public reflection note and revalidates the affected pages", async () => {
+    mockOwnedJob({
+      companyId: "company-1",
+      id: "job-1",
+    })
+    const insert = mockNoteInsert()
+
+    const result = await createJobNoteAction(
+      { status: "idle" },
+      createFormData({
+        content: "  Strong product signal after the system design round.  ",
+        jobId: "job-1",
+        noteKind: "reflection",
+        visibilityProfile: "public_showcase",
+      }),
+    )
+
+    expect(mockDbInsert).toHaveBeenCalledWith(notes)
+    expect(insert.values).toHaveBeenCalledWith({
+      content: "Strong product signal after the system design round.",
+      jobId: "job-1",
+      noteKind: "reflection",
+      userId: "user-1",
+      visibilityProfile: "public_showcase",
+    })
+    expect(mockRevalidatePath).toHaveBeenCalledWith("/dashboard")
+    expect(mockRevalidatePath).toHaveBeenCalledWith("/jobs/job-1")
+    expect(result).toEqual({
+      message: "Note saved.",
       status: "success",
     })
   })

@@ -1,5 +1,7 @@
 import { z } from "zod"
 
+import { visibilityProfileOptions } from "@/features/showcase/lib/visibility"
+
 export const jobStatusOptions = [
   "wishlist",
   "applied",
@@ -70,12 +72,17 @@ export const jobFormSchema = z
     employmentType: optionalText,
     location: optionalText,
     priority: z.enum(jobPriorityOptions).optional().catch("medium"),
+    publicSummary: optionalText,
     salaryMax: optionalInteger,
     salaryMin: optionalInteger,
     source: optionalText,
     sourceUrl: optionalUrl,
     status: z.enum(jobStatusOptions).optional().catch("wishlist"),
     title: requiredText("Job title"),
+    visibilityProfile: z
+      .enum(visibilityProfileOptions)
+      .optional()
+      .catch("private"),
     workMode: z.enum(workModeOptions).optional().catch(undefined),
   })
   .superRefine((value, context) => {

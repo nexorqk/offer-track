@@ -93,4 +93,36 @@ describe("createJobAction", () => {
     })
     expect(mockRedirect).toHaveBeenCalledWith("/jobs?view=kanban")
   })
+
+  it("persists public showcase fields when creating a job", async () => {
+    mockMissingCompanyLookup()
+
+    const companyReturning = vi.fn().mockResolvedValue([{ id: "company-1" }])
+    const companyValues = vi.fn().mockReturnValue({ returning: companyReturning })
+    const jobReturning = vi.fn().mockResolvedValue([{ id: "job-1" }])
+    const jobValues = vi.fn().mockReturnValue({ returning: jobReturning })
+    const historyValues = vi.fn().mockResolvedValue(undefined)
+
+    mockDbInsert
+      .mockReturnValueOnce({ values: companyValues })
+      .mockReturnValueOnce({ values: jobValues })
+      .mockReturnValueOnce({ values: historyValues })
+
+    await createJobAction(
+      { status: "idle" },
+      createFormData({
+        companyName: "Atlas Labs",
+        publicSummary: "  Building candidate-facing product UX.  ",
+        title: "Senior Frontend Engineer",
+        visibilityProfile: "public_showcase",
+      }),
+    )
+
+    expect(jobValues).toHaveBeenCalledWith(
+      expect.objectContaining({
+        publicSummary: "Building candidate-facing product UX.",
+        visibilityProfile: "public_showcase",
+      }),
+    )
+  })
 })

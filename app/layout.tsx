@@ -1,5 +1,5 @@
 import type { Metadata } from "next"
-import { Geist, Geist_Mono } from "next/font/google"
+import { Geist, Geist_Mono, Space_Grotesk } from "next/font/google"
 
 import "./globals.css"
 import { QueryProvider } from "@/components/providers/query-provider"
@@ -14,6 +14,11 @@ const fontSans = Geist({
 const fontMono = Geist_Mono({
   subsets: ["latin"],
   variable: "--font-mono",
+})
+
+const fontDisplay = Space_Grotesk({
+  subsets: ["latin"],
+  variable: "--font-display",
 })
 
 export const metadata: Metadata = {
@@ -33,9 +38,14 @@ export default function RootLayout({
     <html
       lang="en"
       suppressHydrationWarning
-      className={cn("antialiased", fontSans.variable, fontMono.variable)}
+      className={cn(
+        "antialiased",
+        fontSans.variable,
+        fontMono.variable,
+        fontDisplay.variable
+      )}
     >
-      <body className="min-h-svh bg-gradient-to-b from-background via-background to-muted/30 text-foreground">
+      <body className="min-h-svh bg-background text-foreground">
         <QueryProvider>
           <ThemeProvider>{children}</ThemeProvider>
         </QueryProvider>

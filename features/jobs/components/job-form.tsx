@@ -12,6 +12,7 @@ import {
   jobStatusOptions,
   workModeOptions,
 } from "@/features/jobs/schemas/job"
+import { visibilityProfileOptions } from "@/features/showcase/lib/visibility"
 import {
   initialJobFormState,
   type JobFormFieldName,
@@ -242,6 +243,41 @@ export function JobForm({
         </div>
       </section>
 
+      <section className="grid gap-4 rounded-[1.75rem] border bg-background/80 p-4">
+        <div className="flex flex-col gap-1">
+          <h2 className="text-lg font-semibold tracking-tight">Showcase</h2>
+          <p className="text-sm text-muted-foreground">
+            Keep the role private or prepare it for the public showcase.
+          </p>
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-[0.9fr_1.1fr]">
+          <SelectField
+            error={getFieldError(formState.errors, "visibilityProfile")}
+            label="Visibility"
+            name="visibilityProfile"
+            options={visibilityProfileOptions.map((value) => ({
+              label: formatVisibilityProfileLabel(value),
+              value,
+            }))}
+            registration={register("visibilityProfile")}
+          />
+
+          <div className="grid gap-2">
+            <label htmlFor="publicSummary" className="text-sm font-medium">
+              Public summary
+            </label>
+            <textarea
+              id="publicSummary"
+              className={textareaClassName}
+              placeholder="Short public-facing summary for the showcase page."
+              {...register("publicSummary")}
+            />
+            <FieldError error={getFieldError(formState.errors, "publicSummary")} />
+          </div>
+        </div>
+      </section>
+
       {showErrorSummary ? (
         <div
           aria-label="Form validation errors"
@@ -384,6 +420,14 @@ function getErrorSummary(clientErrors: FieldErrors<JobFormValues>) {
 function formatStatusLabel(value: string) {
   if (value === "hr_screen") {
     return "HR screen"
+  }
+
+  return value[0].toUpperCase() + value.slice(1)
+}
+
+function formatVisibilityProfileLabel(value: string) {
+  if (value === "public_showcase") {
+    return "Public showcase"
   }
 
   return value[0].toUpperCase() + value.slice(1)

@@ -116,12 +116,14 @@ function parseJobForm(formData: FormData) {
     employmentType: getString(formData, "employmentType"),
     location: getString(formData, "location"),
     priority: getString(formData, "priority"),
+    publicSummary: getString(formData, "publicSummary"),
     salaryMax: getString(formData, "salaryMax"),
     salaryMin: getString(formData, "salaryMin"),
     source: getString(formData, "source"),
     sourceUrl: getString(formData, "sourceUrl"),
     status: getString(formData, "status"),
     title: getString(formData, "title"),
+    visibilityProfile: getString(formData, "visibilityProfile"),
     workMode: getString(formData, "workMode"),
   })
 }
@@ -165,6 +167,7 @@ export async function createJobAction(
       employmentType: jobInput.employmentType,
       location: jobInput.location,
       priority: jobInput.priority,
+      publicSummary: jobInput.publicSummary,
       salaryMax: jobInput.salaryMax,
       salaryMin: jobInput.salaryMin,
       source: jobInput.source,
@@ -173,6 +176,7 @@ export async function createJobAction(
       title: jobInput.title,
       updatedAt: now,
       userId: user.id,
+      visibilityProfile: jobInput.visibilityProfile,
       workMode: jobInput.workMode,
     })
     .returning({
@@ -383,6 +387,8 @@ export async function createJobNoteAction(
 
   const parsed = jobNoteFormSchema.safeParse({
     content: getString(formData, "content"),
+    noteKind: getString(formData, "noteKind"),
+    visibilityProfile: getString(formData, "visibilityProfile"),
   })
 
   if (!parsed.success) {
@@ -405,7 +411,9 @@ export async function createJobNoteAction(
   await db.insert(notes).values({
     content: parsed.data.content,
     jobId,
+    noteKind: parsed.data.noteKind,
     userId: user.id,
+    visibilityProfile: parsed.data.visibilityProfile,
   })
 
   revalidatePath("/dashboard")
@@ -480,6 +488,7 @@ export async function updateJobAction(
       employmentType: jobInput.employmentType,
       location: jobInput.location,
       priority: jobInput.priority,
+      publicSummary: jobInput.publicSummary,
       salaryMax: jobInput.salaryMax,
       salaryMin: jobInput.salaryMin,
       source: jobInput.source,
@@ -487,6 +496,7 @@ export async function updateJobAction(
       status: jobInput.status,
       title: jobInput.title,
       updatedAt: now,
+      visibilityProfile: jobInput.visibilityProfile,
       workMode: jobInput.workMode,
     })
     .where(and(eq(jobs.id, jobId), eq(jobs.userId, user.id)))

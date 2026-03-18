@@ -30,6 +30,18 @@ export const interviewType = pgEnum("interview_type", [
   "final",
 ]);
 
+export const visibilityProfile = pgEnum("visibility_profile", [
+  "private",
+  "shared",
+  "public_showcase",
+]);
+
+export const noteKind = pgEnum("note_kind", [
+  "internal",
+  "reflection",
+  "update",
+]);
+
 export const users = pgTable(
   "users",
   {
@@ -55,11 +67,19 @@ export const profiles = pgTable(
     email: text("email").notNull(),
     fullName: text("full_name"),
     avatarUrl: text("avatar_url"),
+    showcaseEnabled: boolean("showcase_enabled").notNull().default(false),
+    showcaseSlug: text("showcase_slug"),
+    showcaseTitle: text("showcase_title"),
+    showcaseIntro: text("showcase_intro"),
+    showcaseBio: text("showcase_bio"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
   },
-  (table) => [uniqueIndex("profiles_email_idx").on(table.email)]
+  (table) => [
+    uniqueIndex("profiles_email_idx").on(table.email),
+    uniqueIndex("profiles_showcase_slug_idx").on(table.showcaseSlug),
+  ]
 );
 
 export const sessions = pgTable(
@@ -112,6 +132,7 @@ export const jobs = pgTable(
   "jobs",
   {
     id: uuid("id").defaultRandom().primaryKey(),
+    publicId: uuid("public_id").defaultRandom().notNull(),
     userId: uuid("user_id")
       .notNull()
       .references(() => profiles.id, { onDelete: "cascade" }),
@@ -129,6 +150,10 @@ export const jobs = pgTable(
     currency: text("currency"),
     status: jobStatus("status").notNull().default("wishlist"),
     priority: text("priority").notNull().default("medium"),
+    visibilityProfile: visibilityProfile("visibility_profile")
+      .notNull()
+      .default("private"),
+    publicSummary: text("public_summary"),
     appliedAt: timestamp("applied_at", { withTimezone: true }),
     description: text("description"),
     createdAt: timestamp("created_at", { withTimezone: true })
@@ -139,9 +164,11 @@ export const jobs = pgTable(
       .notNull(),
   },
   (table) => [
+    uniqueIndex("jobs_public_id_idx").on(table.publicId),
     index("jobs_user_id_idx").on(table.userId),
     index("jobs_company_id_idx").on(table.companyId),
     index("jobs_status_idx").on(table.status),
+    index("jobs_visibility_profile_idx").on(table.visibilityProfile),
     index("jobs_applied_at_idx").on(table.appliedAt),
   ]
 );
@@ -205,6 +232,10 @@ export const notes = pgTable(
     jobId: uuid("job_id")
       .notNull()
       .references(() => jobs.id, { onDelete: "cascade" }),
+    noteKind: noteKind("note_kind").notNull().default("internal"),
+    visibilityProfile: visibilityProfile("visibility_profile")
+      .notNull()
+      .default("private"),
     content: text("content").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
@@ -216,6 +247,7 @@ export const notes = pgTable(
   (table) => [
     index("notes_user_id_idx").on(table.userId),
     index("notes_job_id_idx").on(table.jobId),
+    index("notes_visibility_profile_idx").on(table.visibilityProfile),
   ]
 );
 

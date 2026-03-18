@@ -7,11 +7,13 @@ import {
   contacts,
   interviews,
   jobStageHistory,
+  noteKind,
   jobStatus,
   jobs,
   notes,
   profiles,
   tasks,
+  visibilityProfile,
   workspaceNotes,
   workMode,
 } from "@/lib/db/schema"
@@ -33,12 +35,26 @@ describe("database schema", () => {
     expect(workMode.enumValues).toEqual(["remote", "hybrid", "onsite"])
   })
 
+  it("defines the expected showcase enum values", () => {
+    expect(visibilityProfile.enumValues).toEqual([
+      "private",
+      "shared",
+      "public_showcase",
+    ])
+    expect(noteKind.enumValues).toEqual(["internal", "reflection", "update"])
+  })
+
   it("includes the core domain tables", () => {
     expect(Object.keys(getTableColumns(profiles))).toEqual([
       "id",
       "email",
       "fullName",
       "avatarUrl",
+      "showcaseEnabled",
+      "showcaseSlug",
+      "showcaseTitle",
+      "showcaseIntro",
+      "showcaseBio",
       "createdAt",
     ])
 
@@ -57,6 +73,7 @@ describe("database schema", () => {
 
     expect(Object.keys(getTableColumns(jobs))).toEqual([
       "id",
+      "publicId",
       "userId",
       "companyId",
       "title",
@@ -70,8 +87,21 @@ describe("database schema", () => {
       "currency",
       "status",
       "priority",
+      "visibilityProfile",
+      "publicSummary",
       "appliedAt",
       "description",
+      "createdAt",
+      "updatedAt",
+    ])
+
+    expect(Object.keys(getTableColumns(notes))).toEqual([
+      "id",
+      "userId",
+      "jobId",
+      "noteKind",
+      "visibilityProfile",
+      "content",
       "createdAt",
       "updatedAt",
     ])

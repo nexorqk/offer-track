@@ -1,11 +1,10 @@
-import { RoutePlaceholder } from "@/components/layout/route-placeholder"
+import { requireCurrentUser } from "@/features/auth/server/auth"
+import { ShowcaseSettingsForm } from "@/features/showcase/components/showcase-settings-form"
+import { getShowcaseSettingsForUser } from "@/features/showcase/server/queries"
 
-export default function SettingsPage() {
-  return (
-    <RoutePlaceholder
-      eyebrow="Workspace"
-      title="Settings"
-      description="Use this route for profile preferences, integrations, notification rules, and workspace defaults."
-    />
-  )
+export default async function SettingsPage() {
+  const user = await requireCurrentUser()
+  const showcaseSettings = await getShowcaseSettingsForUser(user.id)
+
+  return <ShowcaseSettingsForm initialValues={showcaseSettings} />
 }

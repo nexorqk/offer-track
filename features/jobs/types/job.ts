@@ -8,12 +8,14 @@ export type JobFormValues = {
   employmentType: string
   location: string
   priority: string
+  publicSummary: string
   salaryMax: string
   salaryMin: string
   source: string
   sourceUrl: string
   status: string
   title: string
+  visibilityProfile: string
   workMode: string
 }
 
@@ -37,12 +39,14 @@ export const emptyJobFormValues: JobFormValues = {
   employmentType: "",
   location: "",
   priority: "medium",
+  publicSummary: "",
   salaryMax: "",
   salaryMin: "",
   source: "",
   sourceUrl: "",
   status: "wishlist",
   title: "",
+  visibilityProfile: "private",
   workMode: "",
 }
 
@@ -73,6 +77,7 @@ export function toJobFormValues(input: Partial<JobFormInput>): JobFormValues {
     employmentType: input.employmentType ?? "",
     location: input.location ?? "",
     priority: input.priority ?? "medium",
+    publicSummary: input.publicSummary ?? "",
     salaryMax:
       typeof input.salaryMax === "number" ? String(input.salaryMax) : "",
     salaryMin:
@@ -81,6 +86,7 @@ export function toJobFormValues(input: Partial<JobFormInput>): JobFormValues {
     sourceUrl: input.sourceUrl ?? "",
     status: input.status ?? "wishlist",
     title: input.title ?? "",
+    visibilityProfile: input.visibilityProfile ?? "private",
     workMode: input.workMode ?? "",
   }
 }

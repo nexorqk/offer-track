@@ -39,6 +39,10 @@ import {
   type JobNoteListItem,
   type JobTaskListItem,
 } from "@/features/jobs/types/job-detail"
+import {
+  noteKindOptions,
+  visibilityProfileOptions,
+} from "@/features/showcase/lib/visibility"
 import { taskFormSchema } from "@/features/tasks/schemas/task"
 import {
   syncServerFieldErrors,
@@ -577,6 +581,45 @@ function NotePanel({
           <FieldError error={getFieldError(state, "content")} />
         </div>
 
+        <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid gap-2">
+            <label htmlFor="job-note-kind" className="text-sm font-medium">
+              Note type
+            </label>
+            <select
+              id="job-note-kind"
+              name="noteKind"
+              className={selectClassName}
+              defaultValue="internal"
+            >
+              {noteKindOptions.map((value) => (
+                <option key={value} value={value}>
+                  {formatNoteKindLabel(value)}
+                </option>
+              ))}
+            </select>
+            <FieldError error={getFieldError(state, "noteKind")} />
+          </div>
+          <div className="grid gap-2">
+            <label htmlFor="job-note-visibility" className="text-sm font-medium">
+              Visibility
+            </label>
+            <select
+              id="job-note-visibility"
+              name="visibilityProfile"
+              className={selectClassName}
+              defaultValue="private"
+            >
+              {visibilityProfileOptions.map((value) => (
+                <option key={value} value={value}>
+                  {formatVisibilityProfileLabel(value)}
+                </option>
+              ))}
+            </select>
+            <FieldError error={getFieldError(state, "visibilityProfile")} />
+          </div>
+        </div>
+
         <DraftStateMessage draft={draft} status={draftStatus} />
         <FormStateMessage state={state} />
 
@@ -592,7 +635,17 @@ function NotePanel({
           notes.map((note) => (
             <WorkflowListCard key={note.id} tone="notes">
               <div className="mb-2 flex items-center justify-between gap-3">
-                <strong className="text-sm font-semibold">Job note</strong>
+                <div className="flex flex-wrap items-center gap-2">
+                  <strong className="text-sm font-semibold">Job note</strong>
+                  <span className="rounded-full border bg-background/70 px-2.5 py-1 text-[0.68rem] text-muted-foreground">
+                    {formatNoteKindLabel(note.noteKind)}
+                  </span>
+                  {note.visibilityProfile === "public_showcase" ? (
+                    <span className="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-1 text-[0.68rem] text-emerald-700 dark:text-emerald-300">
+                      Public showcase
+                    </span>
+                  ) : null}
+                </div>
                 <span className="rounded-full border bg-background/70 px-2.5 py-1 text-xs text-muted-foreground">
                   {formatDateTime(note.updatedAt)}
                 </span>
@@ -1064,6 +1117,20 @@ function formatInterviewType(value: "final" | "hr" | "technical") {
     case "final":
       return "Final"
   }
+}
+
+function formatNoteKindLabel(value: "internal" | "reflection" | "update") {
+  return value[0].toUpperCase() + value.slice(1)
+}
+
+function formatVisibilityProfileLabel(
+  value: "private" | "shared" | "public_showcase",
+) {
+  if (value === "public_showcase") {
+    return "Public showcase"
+  }
+
+  return value[0].toUpperCase() + value.slice(1)
 }
 
 type WorkflowTone = "contacts" | "interviews" | "tasks" | "notes"

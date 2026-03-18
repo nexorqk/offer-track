@@ -12,12 +12,14 @@ describe("job form schema", () => {
       employmentType: " full-time ",
       location: " Remote, EU ",
       priority: "high",
+      publicSummary: "  Leading product frontend work across the candidate journey.  ",
       salaryMax: "5500",
       salaryMin: "4500",
       source: " LinkedIn ",
       sourceUrl: "https://linkedin.com/jobs/view/123",
       status: "applied",
       title: " Senior Frontend Engineer ",
+      visibilityProfile: "public_showcase",
       workMode: "remote",
     })
 
@@ -28,12 +30,14 @@ describe("job form schema", () => {
       employmentType: "full-time",
       location: "Remote, EU",
       priority: "high",
+      publicSummary: "Leading product frontend work across the candidate journey.",
       salaryMax: 5500,
       salaryMin: 4500,
       source: "LinkedIn",
       sourceUrl: "https://linkedin.com/jobs/view/123",
       status: "applied",
       title: "Senior Frontend Engineer",
+      visibilityProfile: "public_showcase",
       workMode: "remote",
     })
     expect(parsed.appliedAt).toEqual(new Date("2026-03-10T00:00:00.000Z"))
@@ -48,12 +52,14 @@ describe("job form schema", () => {
       employmentType: "",
       location: "",
       priority: "",
+      publicSummary: "",
       salaryMax: "",
       salaryMin: "",
       source: "",
       sourceUrl: "",
       status: "",
       title: "Platform Engineer",
+      visibilityProfile: "",
       workMode: "",
     })
 
@@ -64,12 +70,14 @@ describe("job form schema", () => {
       employmentType: undefined,
       location: undefined,
       priority: "medium",
+      publicSummary: undefined,
       salaryMax: undefined,
       salaryMin: undefined,
       source: undefined,
       sourceUrl: undefined,
       status: "wishlist",
       title: "Platform Engineer",
+      visibilityProfile: "private",
       workMode: undefined,
     })
     expect(parsed.appliedAt).toBeUndefined()

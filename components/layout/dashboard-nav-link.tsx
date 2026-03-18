@@ -36,21 +36,40 @@ type DashboardNavLinkProps = {
 }
 
 const desktopNavLinkClass =
-  "inline-flex min-h-11 items-center justify-start gap-2 rounded-[1.15rem] px-3 text-sm font-medium transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+  "group/nav relative inline-flex min-h-[4rem] items-start justify-start gap-3 rounded-[1.45rem] border px-3.5 py-3 text-left text-sm transition-all duration-200 outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
 
 const desktopNavLinkActiveClass =
-  "bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary/80"
+  "border-[color:var(--shell-active-border)] bg-[color:var(--shell-active)] text-[color:var(--shell-active-foreground)] shadow-[0_18px_40px_-28px_var(--shell-shadow-strong)]"
 
-const desktopNavLinkIdleClass = "hover:bg-muted hover:text-foreground"
+const desktopNavLinkIdleClass =
+  "border-transparent text-[color:var(--shell-rail-foreground)] hover:border-white/8 hover:bg-white/7"
 
 const mobileNavLinkClass =
-  "inline-flex min-h-18 flex-col items-center justify-center gap-1 rounded-[1.35rem] px-2 py-2 text-[0.72rem] font-medium transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+  "group/nav inline-flex min-h-[4.5rem] flex-col items-center justify-center gap-1.5 rounded-[1.4rem] border px-2.5 py-2.5 text-[0.72rem] font-medium transition-all duration-200 outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
 
 const mobileNavLinkActiveClass =
-  "border bg-background text-foreground shadow-sm"
+  "border-[color:var(--shell-active-border)] bg-[color:var(--shell-panel)] text-foreground shadow-[0_18px_36px_-30px_var(--shell-shadow)]"
 
 const mobileNavLinkIdleClass =
-  "border border-transparent text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+  "border-transparent text-muted-foreground hover:border-[color:var(--shell-panel-border)] hover:bg-[color:var(--shell-panel-muted)] hover:text-foreground"
+
+const desktopNavIconClass =
+  "flex size-10 shrink-0 items-center justify-center rounded-[1rem] border transition-all duration-200"
+
+const desktopNavIconActiveClass =
+  "border-white/12 bg-white/12 text-[color:var(--shell-active-foreground)]"
+
+const desktopNavIconIdleClass =
+  "border-white/8 bg-black/8 text-[color:var(--shell-rail-muted)] group-hover/nav:text-[color:var(--shell-rail-foreground)]"
+
+const mobileNavIconClass =
+  "flex size-9 items-center justify-center rounded-[1rem] border transition-all duration-200"
+
+const mobileNavIconActiveClass =
+  "border-[color:var(--shell-active-border)] bg-[color:var(--shell-active)] text-foreground"
+
+const mobileNavIconIdleClass =
+  "border-transparent bg-background/60 text-muted-foreground group-hover/nav:bg-background group-hover/nav:text-foreground"
 
 function isActivePath(pathname: string, href: string) {
   if (href === "/dashboard") {
@@ -72,26 +91,75 @@ export function DashboardNavLink({
   const active = isActivePath(pathname, href)
   const Icon = icon ? iconMap[icon] : null
 
+  if (mobile) {
+    return (
+      <Link
+        href={href}
+        aria-current={active ? "page" : undefined}
+        className={cn(
+          mobileNavLinkClass,
+          active ? mobileNavLinkActiveClass : mobileNavLinkIdleClass
+        )}
+      >
+        {Icon ? (
+          <span
+            className={cn(
+              mobileNavIconClass,
+              active ? mobileNavIconActiveClass : mobileNavIconIdleClass
+            )}
+          >
+            <Icon className="size-4" />
+          </span>
+        ) : null}
+        <span>{label}</span>
+      </Link>
+    )
+  }
+
   return (
     <Link
       href={href}
       aria-current={active ? "page" : undefined}
       aria-label={collapsed ? label : undefined}
       className={cn(
-        mobile ? mobileNavLinkClass : desktopNavLinkClass,
-        !mobile && collapsed && "justify-center px-0",
-        active
-          ? mobile
-            ? mobileNavLinkActiveClass
-            : desktopNavLinkActiveClass
-          : mobile
-            ? mobileNavLinkIdleClass
-            : desktopNavLinkIdleClass
+        desktopNavLinkClass,
+        collapsed ? "min-h-0 justify-center px-0 py-2.5" : "w-full",
+        active ? desktopNavLinkActiveClass : desktopNavLinkIdleClass
       )}
-      title={collapsed ? description ?? label : undefined}
+      title={collapsed ? (description ?? label) : undefined}
     >
-      {Icon ? <Icon data-icon="inline-start" /> : null}
-      <span className={cn(!mobile && collapsed && "sr-only")}>{label}</span>
+      {Icon ? (
+        <span
+          className={cn(
+            desktopNavIconClass,
+            active ? desktopNavIconActiveClass : desktopNavIconIdleClass,
+            collapsed && "size-11"
+          )}
+        >
+          <Icon className="size-4.5" />
+        </span>
+      ) : null}
+      {collapsed ? (
+        <span className="sr-only">{label}</span>
+      ) : (
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-sm leading-5 font-semibold">
+            {label}
+          </span>
+          {description ? (
+            <span
+              className={cn(
+                "mt-1 block text-[0.72rem] leading-5",
+                active
+                  ? "text-[color:var(--shell-active-foreground)] opacity-75"
+                  : "text-[color:var(--shell-rail-muted)]"
+              )}
+            >
+              {description}
+            </span>
+          ) : null}
+        </span>
+      )}
     </Link>
   )
 }
