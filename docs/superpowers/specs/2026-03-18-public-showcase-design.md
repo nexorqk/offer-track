@@ -16,6 +16,7 @@ During brainstorming, the chosen direction was:
 - Visibility model: preset profiles rather than field-by-field publishing
 - Primary outcome: content and reflection, not just static reporting
 - Public scope in v1: jobs and reflection-style notes only
+- Private shell direction: `Soft Bronze`
 - Visual stance: public showcase should be visually distinct from the private dashboard
 
 ## Problem
@@ -231,7 +232,7 @@ The showcase should not inherit the private dashboard shell verbatim.
 
 Design intent:
 
-- private dashboard keeps the stronger warm operational shell
+- private dashboard keeps the `Soft Bronze` warm operational shell
 - public showcase becomes lighter, cleaner, and more editorial
 - both surfaces still feel like the same product family
 - public pages should feel presentational, not tool-like
